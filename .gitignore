@@ -1,0 +1,6 @@
+.idea
+.bin
+.data
+.env.prod
+vendor
+bin
