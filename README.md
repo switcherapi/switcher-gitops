@@ -2,7 +2,7 @@
 
 <div align="center">
 <b>Switcher GitOps</b><br>
-GitOps Domain Snapshot Orquestrator for Switcher API
+GitOps Domain Snapshot Orchestrator for Switcher API
 </div>
 
 <div align="center">
@@ -18,7 +18,7 @@ GitOps Domain Snapshot Orquestrator for Switcher API
 ![Switcher API: Cloud-based Feature Flag API](https://github.com/switcherapi/switcherapi-assets/blob/master/logo/switcherapi_grey.png)
 
 # About  
-**Switcher GitOps** is Domain Snapshot Orquestrator for Switcher API. It allows you to manage your feature flags and configurations in a GitOps manner. It is a simple and easy way to manage your feature flags and configurations in a versioned manner.
+**Switcher GitOps** is Domain Snapshot Orchestrator for Switcher API. It allows you to manage your feature flags and configurations in a GitOps manner. It is a simple and easy way to manage your feature flags and configurations in a versioned manner.
 
 # Features
 - Manage Switchers in a GitOps manner
