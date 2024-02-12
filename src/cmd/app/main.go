@@ -7,5 +7,7 @@ import (
 
 func main() {
 	config.InitEnv()
-	server.Init()
+
+	app := server.NewApp()
+	app.Start()
 }
