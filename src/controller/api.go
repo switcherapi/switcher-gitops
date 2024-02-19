@@ -6,10 +6,18 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
-type ApiController struct{}
+type ApiController struct {
+	RouteCheckApiPath string
+}
 
 type ApiCheckResponse struct {
 	Message string `json:"message"`
+}
+
+func NewApiController() *ApiController {
+	return &ApiController{
+		RouteCheckApiPath: "/api/check",
+	}
 }
 
 func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.Request) {
