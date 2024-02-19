@@ -7,7 +7,7 @@ const (
 )
 
 type Account struct {
-	ID         primitive.ObjectID `bson:"id,omitempty"`
+	ID         primitive.ObjectID `bson:"_id,omitempty"`
 	Repository string             `json:"repository"`
 	Branch     string             `json:"branch"`
 	Domain     DomainDetails      `json:"domain"`

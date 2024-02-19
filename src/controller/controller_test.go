@@ -7,13 +7,14 @@ import (
 
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/db"
+	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var mongoDb *mongo.Database
-var accountController AccountController
-var apiController ApiController
+var accountController *AccountController
+var apiController *ApiController
 
 func TestMain(m *testing.M) {
 	setup()
@@ -27,14 +28,48 @@ func setup() {
 	config.InitEnv()
 	mongoDb = db.InitDb()
 
-	apiController = ApiController{}
-	accountController = AccountController{
-		AccountRepository: &repository.AccountRepositoryMongo{Db: mongoDb},
-	}
+	apiController = NewApiController()
+	accountController = NewAccountController(&repository.AccountRepositoryMongo{Db: mongoDb})
 }
 
 func shutdown() {
-	// Drop the database after all tests have run
 	mongoDb.Drop(context.Background())
 	mongoDb.Client().Disconnect(context.Background())
+}
+
+// Fixtures
+
+var accountV1 = model.Account{
+	Repository: "switcherapi/switcher-gitops",
+	Branch:     "master",
+	Domain: model.DomainDetails{
+		ID:         "123",
+		Name:       "Switcher GitOps",
+		Version:    "123",
+		LastCommit: "123",
+		Status:     "active",
+		Message:    "Synced successfully",
+	},
+	Settings: model.Settings{
+		Active:     true,
+		Window:     "10m",
+		ForcePrune: false,
+	},
+}
+
+var accountV2 = model.Account{
+	Repository: "switcherapi/switcher-gitops",
+	Branch:     "master",
+	Domain: model.DomainDetails{
+		ID:         "123",
+		Name:       "Switcher GitOps",
+		Version:    "123",
+		LastCommit: "123",
+		Status:     "active",
+	},
+	Settings: model.Settings{
+		Active:     false,
+		Window:     "5m",
+		ForcePrune: true,
+	},
 }

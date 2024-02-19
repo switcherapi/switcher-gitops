@@ -58,12 +58,14 @@ func (app *App) Start() error {
 }
 
 func initRoutes(db *mongo.Database) *mux.Router {
-	ApiController := controller.ApiController{}
-	AccountController := controller.AccountController{AccountRepository: &repository.AccountRepositoryMongo{Db: db}}
+	apiController := controller.NewApiController()
+	accountController := controller.NewAccountController(&repository.AccountRepositoryMongo{Db: db})
 
 	r := mux.NewRouter()
-	r.HandleFunc("/api/check", ApiController.CheckApiHandler).Methods("GET")
-	r.HandleFunc("/accounts", AccountController.CreateAccountHandler).Methods("POST")
+	r.HandleFunc(apiController.RouteCheckApiPath, apiController.CheckApiHandler).Methods("GET")
+	r.HandleFunc(accountController.RouteAccountPath, accountController.CreateAccountHandler).Methods("POST")
+	r.HandleFunc(accountController.RouteAccountPath+"/{domainId}", accountController.FetchAccountHandler).Methods("GET")
+	r.HandleFunc(accountController.RouteAccountPath+"/{domainId}", accountController.UpdateAccountHandler).Methods("PUT")
 
 	return r
 }

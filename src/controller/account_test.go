@@ -13,27 +13,8 @@ import (
 )
 
 func TestCreateAccountHandler(t *testing.T) {
-	// Create a sample account request
-	accountRequest := model.Account{
-		Repository: "switcherapi/switcher-gitops",
-		Branch:     "master",
-		Domain: model.DomainDetails{
-			ID:         "123",
-			Name:       "Switcher GitOps",
-			Version:    "123",
-			LastCommit: "123",
-			Status:     "active",
-			Message:    "Synced successfully",
-		},
-		Settings: model.Settings{
-			Active:     true,
-			Window:     "10m",
-			ForcePrune: false,
-		},
-	}
-
 	// Create a request and response recorder
-	w, r := givenAccountRequest(accountRequest)
+	w, r := givenAccountRequest(accountV1)
 
 	// Test
 	accountController.CreateAccountHandler(w, r)
@@ -44,12 +25,92 @@ func TestCreateAccountHandler(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Nil(t, err)
-	assert.Equal(t, accountRequest.Repository, accountResponse.Repository)
+	assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 }
+
+func TestCreateAccountHandlerInvalidRequest(t *testing.T) {
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("POST", accountController.RouteAccountPath, nil)
+
+	// Test
+	accountController.CreateAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
+}
+
+func TestFetchAccountHandlerByDomainId(t *testing.T) {
+	// Create an account
+	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", accountController.RouteAccountPath+"/123", nil)
+
+	// Test
+	accountController.FetchAccountHandler(w, r)
+
+	// Assert
+	var accountResponse model.Account
+	err := json.NewDecoder(w.Body).Decode(&accountResponse)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Nil(t, err)
+	assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+}
+
+func TestFetchAccountHandlerByDomainIdNotFound(t *testing.T) {
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", accountController.RouteAccountPath+"/111", nil)
+
+	// Test
+	accountController.FetchAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "{\"error\":\"Account not found\"}", w.Body.String())
+}
+
+func TestUpdateAccountHandler(t *testing.T) {
+	// Create an account
+	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+	// Create a request and response recorder
+	w, r := givenAccountRequest(accountV2)
+
+	// Test
+	accountController.UpdateAccountHandler(w, r)
+
+	// Assert
+	var accountResponse model.Account
+	err := json.NewDecoder(w.Body).Decode(&accountResponse)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Nil(t, err)
+	assert.Equal(t, accountV2.Repository, accountResponse.Repository)
+}
+
+func TestUpdateAccountHandlerInvalidRequest(t *testing.T) {
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("PUT", accountController.RouteAccountPath, nil)
+
+	// Test
+	accountController.UpdateAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
+}
+
+// Helpers
 
 func givenAccountRequest(data model.Account) (*httptest.ResponseRecorder, *http.Request) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("POST", "/api/account", nil)
+	r := httptest.NewRequest("POST", accountController.RouteAccountPath, nil)
 
 	// Encode the account request as JSON
 	body, _ := json.Marshal(data)
