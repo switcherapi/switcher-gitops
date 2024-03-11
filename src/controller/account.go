@@ -30,10 +30,10 @@ func NewAccountController(repo repository.AccountRepository) *AccountController 
 func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler {
 	const routesDomainVar = "/{domainId}"
 
-	r.HandleFunc(controller.RouteAccountPath, controller.CreateAccountHandler).Methods(http.MethodPost)
-	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.FetchAccountHandler).Methods(http.MethodGet)
-	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.UpdateAccountHandler).Methods(http.MethodPut)
-	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.DeleteAccountHandler).Methods(http.MethodDelete)
+	r.NewRoute().Path(controller.RouteAccountPath + routesDomainVar).Name("GetAccount").HandlerFunc(controller.FetchAccountHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.RouteAccountPath).Name("CreateAccount").HandlerFunc(controller.CreateAccountHandler).Methods(http.MethodPost)
+	r.NewRoute().Path(controller.RouteAccountPath + routesDomainVar).Name("UpdateAccount").HandlerFunc(controller.UpdateAccountHandler).Methods(http.MethodPut)
+	r.NewRoute().Path(controller.RouteAccountPath + routesDomainVar).Name("DeleteAccount").HandlerFunc(controller.DeleteAccountHandler).Methods(http.MethodDelete)
 
 	return r
 }

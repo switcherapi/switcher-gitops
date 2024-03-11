@@ -24,3 +24,15 @@ func TestResponseJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Some message", response["message"])
 }
+
+func TestResponseJSONError(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+	status := http.StatusOK
+
+	ResponseJSON(w, data, status)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	assert.Equal(t, "", w.Body.String())
+}

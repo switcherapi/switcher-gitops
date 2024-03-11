@@ -8,9 +8,25 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
+
+func TestAccountRegisterRoutes(t *testing.T) {
+	// Create a router
+	r := mux.NewRouter()
+
+	// Test
+	accountController.RegisterRoutes(r)
+
+	// Assert
+	assert.NotNil(t, r)
+	assert.NotNil(t, r.GetRoute("GetAccount"))
+	assert.NotNil(t, r.GetRoute("CreateAccount"))
+	assert.NotNil(t, r.GetRoute("UpdateAccount"))
+	assert.NotNil(t, r.GetRoute("DeleteAccount"))
+}
 
 func TestCreateAccountHandler(t *testing.T) {
 	// Create a request and response recorder

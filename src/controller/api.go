@@ -22,7 +22,7 @@ func NewApiController() *ApiController {
 }
 
 func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
-	r.HandleFunc(controller.RouteCheckApiPath, controller.CheckApiHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.RouteCheckApiPath).Name("CheckApi").HandlerFunc(controller.CheckApiHandler).Methods(http.MethodGet)
 
 	return r
 }

@@ -5,8 +5,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestApiRegisterRoutes(t *testing.T) {
+	r := mux.NewRouter()
+	apiController.RegisterRoutes(r)
+
+	assert.NotNil(t, r)
+	assert.NotNil(t, r.GetRoute("CheckApi"))
+}
 
 func TestCheckApiHandler(t *testing.T) {
 	w, r := givenApiRequest()
