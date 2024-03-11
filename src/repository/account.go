@@ -2,11 +2,14 @@ package repository
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type AccountRepository interface {
@@ -29,6 +32,11 @@ func (err ErrAccountNotFound) Error() string {
 }
 
 const domainIdFilter = "domain.id"
+
+func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
+	registerAccountRepositoryValidators(db)
+	return &AccountRepositoryMongo{Db: db}
+}
 
 func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
@@ -92,4 +100,18 @@ func getDbContext(repo *AccountRepositoryMongo) (*mongo.Collection, context.Cont
 	collection := repo.Db.Collection(model.CollectionName)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	return collection, ctx, cancel
+}
+
+func registerAccountRepositoryValidators(db *mongo.Database) {
+	collection := db.Collection(model.CollectionName)
+	indexOptions := options.Index().SetUnique(true)
+	indexModel := mongo.IndexModel{
+		Keys:    bson.M{domainIdFilter: 1},
+		Options: indexOptions,
+	}
+
+	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

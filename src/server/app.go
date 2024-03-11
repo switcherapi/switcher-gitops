@@ -58,8 +58,10 @@ func (app *App) Start() error {
 }
 
 func initRoutes(db *mongo.Database) *mux.Router {
+	accountRepository := repository.NewAccountRepositoryMongo(db)
+
 	apiController := controller.NewApiController()
-	accountController := controller.NewAccountController(&repository.AccountRepositoryMongo{Db: db})
+	accountController := controller.NewAccountController(accountRepository)
 
 	r := mux.NewRouter()
 	apiController.RegisterRoutes(r)

@@ -41,6 +41,21 @@ func TestCreateAccountHandlerInvalidRequest(t *testing.T) {
 	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
 }
 
+func TestCreateAccountHandlerErrorCreatingAccount(t *testing.T) {
+	// Create an account
+	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+	// Create a request and response recorder
+	w, r := givenAccountRequest(accountV1)
+
+	// Test
+	accountController.CreateAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "{\"error\":\"Error creating account\"}", w.Body.String())
+}
+
 func TestFetchAccountHandlerByDomainId(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
@@ -106,6 +121,25 @@ func TestUpdateAccountHandlerInvalidRequest(t *testing.T) {
 	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
 }
 
+func TestUpdateAccountHandlerErrorUpdatingAccount(t *testing.T) {
+	// Create an account
+	accountV1Copy := accountV1
+	accountController.CreateAccountHandler(givenAccountRequest(accountV1Copy))
+
+	// Replace the domain ID to force an error
+	accountV1Copy.Domain.ID = "111"
+
+	// Create a request and response recorder
+	w, r := givenAccountRequest(accountV1Copy)
+
+	// Test
+	accountController.UpdateAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "{\"error\":\"Error updating account\"}", w.Body.String())
+}
+
 func TestDeleteAccountHandler(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
@@ -138,7 +172,7 @@ func TestDeleteAccountHandlerNotFound(t *testing.T) {
 
 func givenAccountRequest(data model.Account) (*httptest.ResponseRecorder, *http.Request) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("POST", accountController.RouteAccountPath, nil)
+	r := httptest.NewRequest(http.MethodPost, accountController.RouteAccountPath, nil)
 
 	// Encode the account request as JSON
 	body, _ := json.Marshal(data)
