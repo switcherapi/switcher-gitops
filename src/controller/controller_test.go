@@ -28,8 +28,10 @@ func setup() {
 	config.InitEnv()
 	mongoDb = db.InitDb()
 
+	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
+
 	apiController = NewApiController()
-	accountController = NewAccountController(&repository.AccountRepositoryMongo{Db: mongoDb})
+	accountController = NewAccountController(accountRepository)
 }
 
 func shutdown() {
