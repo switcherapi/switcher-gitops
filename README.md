@@ -32,4 +32,5 @@ GitOps Domain Snapshot Orchestrator for Switcher API
     Windows: `$env:GO_ENV="test"; go run ./src/cmd/app/main.go`<br>
     Unit: `GO_ENV=test go run ./src/cmd/app/main.go`
 - Testing `go test -coverpkg=./... -v`
+- Coverage `go test -coverprofile="coverage.out" ./... && go tool cover -html="coverage.out"`
 - Building `go build -o ./bin/app ./src/cmd/app/main.go`
