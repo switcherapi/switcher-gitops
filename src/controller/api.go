@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
@@ -18,6 +19,12 @@ func NewApiController() *ApiController {
 	return &ApiController{
 		RouteCheckApiPath: "/api/check",
 	}
+}
+
+func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
+	r.HandleFunc(controller.RouteCheckApiPath, controller.CheckApiHandler).Methods(http.MethodGet)
+
+	return r
 }
 
 func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.Request) {

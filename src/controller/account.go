@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
 	"github.com/switcherapi/switcher-gitops/src/utils"
@@ -24,6 +25,17 @@ func NewAccountController(repo repository.AccountRepository) *AccountController 
 		AccountRepository: repo,
 		RouteAccountPath:  "/account",
 	}
+}
+
+func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler {
+	const routesDomainVar = "/{domainId}"
+
+	r.HandleFunc(controller.RouteAccountPath, controller.CreateAccountHandler).Methods(http.MethodPost)
+	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.FetchAccountHandler).Methods(http.MethodGet)
+	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.UpdateAccountHandler).Methods(http.MethodPut)
+	r.HandleFunc(controller.RouteAccountPath+routesDomainVar, controller.DeleteAccountHandler).Methods(http.MethodDelete)
+
+	return r
 }
 
 func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -73,4 +85,16 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 	}
 
 	utils.ResponseJSON(w, accountUpdated, http.StatusOK)
+}
+
+func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
+	domainId := r.URL.Path[len(controller.RouteAccountPath+"/"):]
+	err := controller.AccountRepository.DeleteByDomainId(domainId)
+	if err != nil {
+		log.Println(err)
+		utils.ResponseJSON(w, ErrorResponse{Error: "Error deleting account: " + err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	utils.ResponseJSON(w, nil, http.StatusNoContent)
 }
