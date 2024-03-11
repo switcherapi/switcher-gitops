@@ -62,10 +62,8 @@ func initRoutes(db *mongo.Database) *mux.Router {
 	accountController := controller.NewAccountController(&repository.AccountRepositoryMongo{Db: db})
 
 	r := mux.NewRouter()
-	r.HandleFunc(apiController.RouteCheckApiPath, apiController.CheckApiHandler).Methods("GET")
-	r.HandleFunc(accountController.RouteAccountPath, accountController.CreateAccountHandler).Methods("POST")
-	r.HandleFunc(accountController.RouteAccountPath+"/{domainId}", accountController.FetchAccountHandler).Methods("GET")
-	r.HandleFunc(accountController.RouteAccountPath+"/{domainId}", accountController.UpdateAccountHandler).Methods("PUT")
+	apiController.RegisterRoutes(r)
+	accountController.RegisterRoutes(r)
 
 	return r
 }

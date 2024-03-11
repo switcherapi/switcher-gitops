@@ -31,7 +31,7 @@ func TestCreateAccountHandler(t *testing.T) {
 func TestCreateAccountHandlerInvalidRequest(t *testing.T) {
 	// Create a request and response recorder
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("POST", accountController.RouteAccountPath, nil)
+	r := httptest.NewRequest(http.MethodPost, accountController.RouteAccountPath, nil)
 
 	// Test
 	accountController.CreateAccountHandler(w, r)
@@ -47,7 +47,7 @@ func TestFetchAccountHandlerByDomainId(t *testing.T) {
 
 	// Create a request and response recorder
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", accountController.RouteAccountPath+"/123", nil)
+	r := httptest.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/123", nil)
 
 	// Test
 	accountController.FetchAccountHandler(w, r)
@@ -64,7 +64,7 @@ func TestFetchAccountHandlerByDomainId(t *testing.T) {
 func TestFetchAccountHandlerByDomainIdNotFound(t *testing.T) {
 	// Create a request and response recorder
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", accountController.RouteAccountPath+"/111", nil)
+	r := httptest.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/111", nil)
 
 	// Test
 	accountController.FetchAccountHandler(w, r)
@@ -96,7 +96,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 func TestUpdateAccountHandlerInvalidRequest(t *testing.T) {
 	// Create a request and response recorder
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("PUT", accountController.RouteAccountPath, nil)
+	r := httptest.NewRequest(http.MethodPut, accountController.RouteAccountPath, nil)
 
 	// Test
 	accountController.UpdateAccountHandler(w, r)
@@ -104,6 +104,34 @@ func TestUpdateAccountHandlerInvalidRequest(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
+}
+
+func TestDeleteAccountHandler(t *testing.T) {
+	// Create an account
+	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/123", nil)
+
+	// Test
+	accountController.DeleteAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestDeleteAccountHandlerNotFound(t *testing.T) {
+	// Create a request and response recorder
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/111", nil)
+
+	// Test
+	accountController.DeleteAccountHandler(w, r)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: 111\"}", w.Body.String())
 }
 
 // Helpers
