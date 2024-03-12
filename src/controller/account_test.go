@@ -8,133 +8,106 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
-func TestAccountRegisterRoutes(t *testing.T) {
-	// Create a router
-	r := mux.NewRouter()
-
-	// Test
-	accountController.RegisterRoutes(r)
-
-	// Assert
-	assert.NotNil(t, r)
-	assert.NotNil(t, r.GetRoute("GetAccount"))
-	assert.NotNil(t, r.GetRoute("CreateAccount"))
-	assert.NotNil(t, r.GetRoute("UpdateAccount"))
-	assert.NotNil(t, r.GetRoute("DeleteAccount"))
-}
-
 func TestCreateAccountHandler(t *testing.T) {
-	// Create a request and response recorder
-	w, r := givenAccountRequest(accountV1)
-
 	// Test
-	accountController.CreateAccountHandler(w, r)
+	payload, _ := json.Marshal(accountV1)
+	req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
 	var accountResponse model.Account
-	err := json.NewDecoder(w.Body).Decode(&accountResponse)
+	err := json.NewDecoder(response.Body).Decode(&accountResponse)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusCreated, response.Code)
 	assert.Nil(t, err)
 	assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 }
 
 func TestCreateAccountHandlerInvalidRequest(t *testing.T) {
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, accountController.RouteAccountPath, nil)
-
 	// Test
-	accountController.CreateAccountHandler(w, r)
+	payload := []byte("")
+	req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, response.Code)
+	assert.Equal(t, "{\"error\":\"Invalid request\"}", response.Body.String())
 }
 
 func TestCreateAccountHandlerErrorCreatingAccount(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
-	// Create a request and response recorder
-	w, r := givenAccountRequest(accountV1)
-
 	// Test
-	accountController.CreateAccountHandler(w, r)
+	payload, _ := json.Marshal(accountV1)
+	req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{\"error\":\"Error creating account\"}", w.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+	assert.Equal(t, "{\"error\":\"Error creating account\"}", response.Body.String())
 }
 
 func TestFetchAccountHandlerByDomainId(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/123", nil)
-
 	// Test
-	accountController.FetchAccountHandler(w, r)
+	payload := []byte("")
+	req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
 	var accountResponse model.Account
-	err := json.NewDecoder(w.Body).Decode(&accountResponse)
+	err := json.NewDecoder(response.Body).Decode(&accountResponse)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, response.Code)
 	assert.Nil(t, err)
 	assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 }
 
 func TestFetchAccountHandlerByDomainIdNotFound(t *testing.T) {
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/111", nil)
-
 	// Test
-	accountController.FetchAccountHandler(w, r)
+	payload := []byte("")
+	req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/111", bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, "{\"error\":\"Account not found\"}", w.Body.String())
+	assert.Equal(t, http.StatusNotFound, response.Code)
+	assert.Equal(t, "{\"error\":\"Account not found\"}", response.Body.String())
 }
 
 func TestUpdateAccountHandler(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
-	// Create a request and response recorder
-	w, r := givenAccountRequest(accountV2)
-
 	// Test
-	accountController.UpdateAccountHandler(w, r)
+	payload, _ := json.Marshal(accountV2)
+	req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
 	var accountResponse model.Account
-	err := json.NewDecoder(w.Body).Decode(&accountResponse)
+	err := json.NewDecoder(response.Body).Decode(&accountResponse)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, response.Code)
 	assert.Nil(t, err)
 	assert.Equal(t, accountV2.Repository, accountResponse.Repository)
 }
 
 func TestUpdateAccountHandlerInvalidRequest(t *testing.T) {
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPut, accountController.RouteAccountPath, nil)
-
 	// Test
-	accountController.UpdateAccountHandler(w, r)
+	payload := []byte("")
+	req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{\"error\":\"Invalid request\"}", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, response.Code)
+	assert.Equal(t, "{\"error\":\"Invalid request\"}", response.Body.String())
 }
 
 func TestUpdateAccountHandlerErrorUpdatingAccount(t *testing.T) {
@@ -145,43 +118,36 @@ func TestUpdateAccountHandlerErrorUpdatingAccount(t *testing.T) {
 	// Replace the domain ID to force an error
 	accountV1Copy.Domain.ID = "111"
 
-	// Create a request and response recorder
-	w, r := givenAccountRequest(accountV1Copy)
-
 	// Test
-	accountController.UpdateAccountHandler(w, r)
+	payload, _ := json.Marshal(accountV1Copy)
+	req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{\"error\":\"Error updating account\"}", w.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+	assert.Equal(t, "{\"error\":\"Error updating account\"}", response.Body.String())
 }
 
 func TestDeleteAccountHandler(t *testing.T) {
 	// Create an account
 	accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/123", nil)
-
 	// Test
-	accountController.DeleteAccountHandler(w, r)
+	req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/123", nil)
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, http.StatusNoContent, response.Code)
 }
 
 func TestDeleteAccountHandlerNotFound(t *testing.T) {
-	// Create a request and response recorder
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/111", nil)
-
 	// Test
-	accountController.DeleteAccountHandler(w, r)
+	req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/111", nil)
+	response := executeRequest(req)
 
 	// Assert
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: 111\"}", w.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+	assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: 111\"}", response.Body.String())
 }
 
 // Helpers
