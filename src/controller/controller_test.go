@@ -2,9 +2,12 @@ package controller
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/model"
@@ -15,6 +18,7 @@ import (
 var mongoDb *mongo.Database
 var accountController *AccountController
 var apiController *ApiController
+var r *mux.Router
 
 func TestMain(m *testing.M) {
 	setup()
@@ -28,15 +32,27 @@ func setup() {
 	config.InitEnv()
 	mongoDb = db.InitDb()
 
+	// Init Routes
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
 
 	apiController = NewApiController()
 	accountController = NewAccountController(accountRepository)
+
+	r = mux.NewRouter()
+	apiController.RegisterRoutes(r)
+	accountController.RegisterRoutes(r)
 }
 
 func shutdown() {
 	mongoDb.Drop(context.Background())
 	mongoDb.Client().Disconnect(context.Background())
+}
+
+func executeRequest(req *http.Request) *httptest.ResponseRecorder {
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	return rr
 }
 
 // Fixtures
