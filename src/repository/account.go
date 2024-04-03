@@ -15,6 +15,7 @@ import (
 type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
 	FetchByDomainId(domainId string) (*model.Account, error)
+	FetchAllActiveAccounts() ([]model.Account, error)
 	Update(account *model.Account) (*model.Account, error)
 	DeleteByDomainId(domainId string) error
 }
@@ -32,6 +33,7 @@ func (err ErrAccountNotFound) Error() string {
 }
 
 const domainIdFilter = "domain.id"
+const settingsActiveFilter = "settings.active"
 
 func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
 	registerAccountRepositoryValidators(db)
@@ -63,6 +65,25 @@ func (repo *AccountRepositoryMongo) FetchByDomainId(domainId string) (*model.Acc
 	}
 
 	return &account, nil
+}
+
+func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() ([]model.Account, error) {
+	collection, ctx, cancel := getDbContext(repo)
+	defer cancel()
+
+	filter := primitive.M{settingsActiveFilter: true}
+	cursor, _ := collection.Find(ctx, filter)
+
+	var accounts []model.Account
+	for cursor.Next(ctx) {
+		var account model.Account
+		err := cursor.Decode(&account)
+		if err == nil {
+			accounts = append(accounts, account)
+		}
+	}
+
+	return accounts, nil
 }
 
 func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Account, error) {
