@@ -22,6 +22,6 @@ GitOps Domain Snapshot Orchestrator for Switcher API
 **Switcher GitOps** is Domain Snapshot Orchestrator for Switcher API. It allows you to manage your feature flags and configurations in a GitOps manner. It is a simple and easy way to manage your feature flags and configurations in a versioned manner.
 
 # Features
-- Manage Switchers in a GitOps manner
-- Multiple and Independent Environments
-- Two-way Sync allow you to use the Switcher API Management, Slack App and GitOps at the same time
+- Manage Switchers with GitOps driven environment
+- Multiple and independent Environments
+- Auto Sync enables a fully integrated environment with Switcher API Management, Slack App and GitOps working simultaneously
