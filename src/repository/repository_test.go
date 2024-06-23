@@ -38,8 +38,9 @@ func shutdown() {
 
 func givenAccount(active bool) model.Account {
 	return model.Account{
-		Repository: "switcherapi/switcher-gitops",
-		Branch:     "master",
+		Repository:  "switcherapi/switcher-gitops",
+		Branch:      "master",
+		Environment: "default",
 		Domain: model.DomainDetails{
 			ID:         "123",
 			Name:       "Switcher GitOps",

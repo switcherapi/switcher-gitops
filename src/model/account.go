@@ -6,12 +6,20 @@ const (
 	CollectionName = "accounts"
 )
 
+const (
+	StatusCreated = "Created"
+	StatusSynced  = "Synced"
+	StatusOutSync = "OutSync"
+	StatusError   = "Error"
+)
+
 type Account struct {
-	ID         primitive.ObjectID `bson:"_id,omitempty"`
-	Repository string             `json:"repository"`
-	Branch     string             `json:"branch"`
-	Domain     DomainDetails      `json:"domain"`
-	Settings   Settings           `json:"settings"`
+	ID          primitive.ObjectID `bson:"_id,omitempty"`
+	Repository  string             `json:"repository"`
+	Branch      string             `json:"branch"`
+	Environment string             `json:"environment"`
+	Domain      DomainDetails      `json:"domain"`
+	Settings    Settings           `json:"settings"`
 }
 
 type DomainDetails struct {
