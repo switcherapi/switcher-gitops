@@ -45,10 +45,10 @@ func givenAccount() model.Account {
 		Domain: model.DomainDetails{
 			ID:         "123",
 			Name:       "Switcher GitOps",
-			Version:    "123",
-			LastCommit: "123",
-			Status:     "active",
-			Message:    "Synced successfully",
+			Version:    "",
+			LastCommit: "",
+			Status:     "",
+			Message:    "",
 		},
 		Settings: model.Settings{
 			Active:     true,
