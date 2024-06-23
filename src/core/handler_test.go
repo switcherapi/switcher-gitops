@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
 func TestInitCoreHandlerCoroutine(t *testing.T) {
@@ -51,6 +52,10 @@ func TestStartAccountHandlerInactiveAccount(t *testing.T) {
 
 func TestStartAccountHandler(t *testing.T) {
 	// Given
+	fakeGitService := NewFakeGitService()
+	fakeGitService.status = model.StatusSynced
+	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService)
+
 	account := givenAccount()
 	coreHandler.AccountRepository.Create(&account)
 
@@ -69,6 +74,7 @@ func TestStartAccountHandler(t *testing.T) {
 
 	// Assert
 	accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+	assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 	assert.Equal(t, "Synced successfully", accountFromDb.Domain.Message)
 	assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
 
@@ -78,6 +84,33 @@ func TestStartAccountHandler(t *testing.T) {
 // Helpers
 
 func tearDown() {
-	collection := mongoDb.Collection("accounts")
+	collection := mongoDb.Collection(model.CollectionName)
 	collection.Drop(context.Background())
+}
+
+// Fakes
+
+type FakeGitService struct {
+	lastCommit string
+	date       string
+	content    string
+	status     string
+}
+
+func NewFakeGitService() *FakeGitService {
+	return &FakeGitService{
+		lastCommit: "123",
+		date:       time.Now().Format(time.ANSIC),
+		content:    "Content",
+		status:     model.StatusOutSync,
+	}
+}
+
+func (f *FakeGitService) GetRepositoryData() (string, string, string) {
+	return f.lastCommit, f.date, f.content
+}
+
+func (f *FakeGitService) CheckForChanges(account model.Account, lastCommit string,
+	date string, content string) (status string) {
+	return f.status
 }

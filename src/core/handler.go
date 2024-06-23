@@ -10,12 +10,14 @@ import (
 
 type CoreHandler struct {
 	AccountRepository repository.AccountRepository
+	GitService        IGitService
 	status            int
 }
 
-func NewCoreHandler(repo repository.AccountRepository) *CoreHandler {
+func NewCoreHandler(repo repository.AccountRepository, gitService IGitService) *CoreHandler {
 	return &CoreHandler{
 		AccountRepository: repo,
+		GitService:        gitService,
 	}
 }
 
@@ -49,11 +51,10 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 		case <-quit:
 			return
 		default:
-			lastCommit := "123"
-			date := time.Now().Format("2006-01-02 15:04:05")
+			lastCommit, date, content := c.GitService.GetRepositoryData()
 
-			if account.Domain.LastCommit == "" || account.Domain.LastCommit != lastCommit {
-				c.CheckForChanges(account, lastCommit, date)
+			if isRepositoryOutSync(account, lastCommit) {
+				c.syncUp(account, lastCommit, date, content)
 			}
 		}
 
@@ -61,9 +62,15 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 	}
 }
 
-func (c *CoreHandler) CheckForChanges(account model.Account, lastCommit string, date string) {
+func (c *CoreHandler) syncUp(account model.Account, lastCommit string, date string, content string) {
+	status := c.GitService.CheckForChanges(account, lastCommit, date, content)
+
 	account.Domain.LastCommit = lastCommit
-	account.Domain.Status = "Synced"
+	account.Domain.Status = status
 	account.Domain.Message = "Synced successfully"
 	c.AccountRepository.Update(&account)
+}
+
+func isRepositoryOutSync(account model.Account, lastCommit string) bool {
+	return account.Domain.LastCommit == "" || account.Domain.LastCommit != lastCommit
 }

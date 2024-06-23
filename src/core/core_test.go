@@ -28,7 +28,8 @@ func setup() {
 	mongoDb = db.InitDb()
 
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-	coreHandler = NewCoreHandler(accountRepository)
+	gitService := NewGitService("repoURL", "token", "main")
+	coreHandler = NewCoreHandler(accountRepository, gitService)
 }
 
 func shutdown() {
@@ -40,8 +41,9 @@ func shutdown() {
 
 func givenAccount() model.Account {
 	return model.Account{
-		Repository: "switcherapi/switcher-gitops",
-		Branch:     "master",
+		Repository:  "switcherapi/switcher-gitops",
+		Branch:      "master",
+		Environment: "default",
 		Domain: model.DomainDetails{
 			ID:         "123",
 			Name:       "Switcher GitOps",
