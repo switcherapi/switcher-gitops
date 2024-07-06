@@ -42,8 +42,9 @@ func TestCheckForChanges(t *testing.T) {
 	lastCommit, date, content := gitService.GetRepositoryData()
 
 	// Test
-	status := gitService.CheckForChanges(account, lastCommit, date, content)
+	status, message := gitService.CheckForChanges(account, lastCommit, date, content)
 
 	// Assert
 	assert.Equal(t, model.StatusSynced, status)
+	assert.Equal(t, "Synced successfully", message)
 }

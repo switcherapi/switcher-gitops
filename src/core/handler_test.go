@@ -54,6 +54,7 @@ func TestStartAccountHandler(t *testing.T) {
 	// Given
 	fakeGitService := NewFakeGitService()
 	fakeGitService.status = model.StatusSynced
+	fakeGitService.message = "Synced successfully"
 	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService)
 
 	account := givenAccount()
@@ -95,6 +96,7 @@ type FakeGitService struct {
 	date       string
 	content    string
 	status     string
+	message    string
 }
 
 func NewFakeGitService() *FakeGitService {
@@ -111,6 +113,6 @@ func (f *FakeGitService) GetRepositoryData() (string, string, string) {
 }
 
 func (f *FakeGitService) CheckForChanges(account model.Account, lastCommit string,
-	date string, content string) (status string) {
-	return f.status
+	date string, content string) (status string, message string) {
+	return f.status, f.message
 }

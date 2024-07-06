@@ -63,11 +63,11 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 }
 
 func (c *CoreHandler) syncUp(account model.Account, lastCommit string, date string, content string) {
-	status := c.GitService.CheckForChanges(account, lastCommit, date, content)
+	status, message := c.GitService.CheckForChanges(account, lastCommit, date, content)
 
 	account.Domain.LastCommit = lastCommit
 	account.Domain.Status = status
-	account.Domain.Message = "Synced successfully"
+	account.Domain.Message = message
 	c.AccountRepository.Update(&account)
 }
 

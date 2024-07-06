@@ -8,7 +8,7 @@ import (
 
 type IGitService interface {
 	GetRepositoryData() (string, string, string)
-	CheckForChanges(account model.Account, lastCommit string, date string, content string) (status string)
+	CheckForChanges(account model.Account, lastCommit string, date string, content string) (status string, message string)
 }
 
 type GitService struct {
@@ -34,6 +34,6 @@ func (g *GitService) GetRepositoryData() (string, string, string) {
 }
 
 func (g *GitService) CheckForChanges(account model.Account, lastCommit string,
-	date string, content string) (status string) {
-	return model.StatusSynced
+	date string, content string) (status string, message string) {
+	return model.StatusSynced, "Synced successfully"
 }
