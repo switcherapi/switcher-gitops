@@ -8,6 +8,10 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
+const (
+	SkipMessage = "Skipping tests because environment variables are not set"
+)
+
 func TestNewGitService(t *testing.T) {
 	// Given
 	repoURL := "repoURL"
@@ -24,6 +28,10 @@ func TestNewGitService(t *testing.T) {
 }
 
 func TestGetRepositoryData(t *testing.T) {
+	if !canRunTests() {
+		t.Skip(SkipMessage)
+	}
+
 	// Given
 	gitService := NewGitService(
 		config.GetEnv("GIT_REPO_URL"),
@@ -41,6 +49,10 @@ func TestGetRepositoryData(t *testing.T) {
 }
 
 func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
+	if !canRunTests() {
+		t.Skip(SkipMessage)
+	}
+
 	// Given
 	gitService := NewGitService(
 		config.GetEnv("GIT_REPO_URL"),
@@ -58,6 +70,10 @@ func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
 }
 
 func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
+	if !canRunTests() {
+		t.Skip(SkipMessage)
+	}
+
 	// Given
 	gitService := NewGitService(
 		config.GetEnv("GIT_REPO_URL"),
@@ -75,6 +91,10 @@ func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
 }
 
 func TestCheckForChanges(t *testing.T) {
+	if !canRunTests() {
+		t.Skip(SkipMessage)
+	}
+
 	// Given
 	gitService := NewGitService(
 		config.GetEnv("GIT_REPO_URL"),
@@ -90,4 +110,10 @@ func TestCheckForChanges(t *testing.T) {
 	// Assert
 	assert.Equal(t, model.StatusSynced, status)
 	assert.Equal(t, "Synced successfully", message)
+}
+
+// Helpers
+
+func canRunTests() bool {
+	return config.GetEnv("GIT_REPO_URL") != "" && config.GetEnv("GIT_TOKEN") != "" && config.GetEnv("GIT_BRANCH") != ""
 }
