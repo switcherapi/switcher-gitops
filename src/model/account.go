@@ -13,6 +13,10 @@ const (
 	StatusError   = "Error"
 )
 
+const (
+	FilePath = "resources/"
+)
+
 type Account struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	Repository  string             `json:"repository"`

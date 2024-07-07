@@ -51,9 +51,9 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 		case <-quit:
 			return
 		default:
-			lastCommit, date, content := c.GitService.GetRepositoryData()
+			lastCommit, date, content, err := c.GitService.GetRepositoryData(account.Environment)
 
-			if isRepositoryOutSync(account, lastCommit) {
+			if err == nil && isRepositoryOutSync(account, lastCommit) {
 				c.syncUp(account, lastCommit, date, content)
 			}
 		}
