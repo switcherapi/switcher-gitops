@@ -32,7 +32,6 @@ func NewGitService(repoURL string, token string, branchName string) *GitService 
 }
 
 func (g *GitService) GetRepositoryData(environment string) (string, string, string, error) {
-	println("GetRepositoryData")
 	commitHash, commitDate, content, err := g.getLastCommitData(model.FilePath + environment + ".json")
 
 	if err != nil {
