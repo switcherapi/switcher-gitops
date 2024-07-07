@@ -3,11 +3,17 @@ package core
 import (
 	"time"
 
+	"github.com/go-git/go-billy/v5/memfs"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
 type IGitService interface {
-	GetRepositoryData() (string, string, string)
+	GetRepositoryData(environment string) (string, string, string, error)
 	CheckForChanges(account model.Account, lastCommit string, date string, content string) (status string, message string)
 }
 
@@ -25,15 +31,86 @@ func NewGitService(repoURL string, token string, branchName string) *GitService 
 	}
 }
 
-func (g *GitService) GetRepositoryData() (string, string, string) {
-	lastCommit := "123"
-	date := time.Now().Format(time.ANSIC)
-	content := "Content"
+func (g *GitService) GetRepositoryData(environment string) (string, string, string, error) {
+	println("GetRepositoryData")
+	commitHash, commitDate, content, err := g.getLastCommitData(model.FilePath + environment + ".json")
 
-	return lastCommit, date, content
+	if err != nil {
+		return "", "", "", err
+	}
+
+	return commitHash, commitDate.Format(time.ANSIC), content, nil
 }
 
 func (g *GitService) CheckForChanges(account model.Account, lastCommit string,
 	date string, content string) (status string, message string) {
 	return model.StatusSynced, "Synced successfully"
+}
+
+func (g *GitService) getLastCommitData(filePath string) (string, time.Time, string, error) {
+	c, err := g.getCommitObject()
+
+	if err != nil {
+		return "", time.Time{}, "", err
+	}
+
+	// Get the tree from the commit object
+	tree, _ := c.Tree()
+
+	// Get the file
+	f, err := tree.File(filePath)
+
+	if err != nil {
+		return "", time.Time{}, "", err
+	}
+
+	// Get the content
+	content, _ := f.Contents()
+
+	// Return the date of the commit
+	return c.Hash.String(), c.Author.When, content, nil
+}
+
+func (g *GitService) getCommitObject() (*object.Commit, error) {
+	r, err := g.getRepository()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the HEAD reference
+	ref, _ := r.Head()
+
+	// Get the commit object from the reference
+	return r.CommitObject(ref.Hash())
+}
+
+func (g *GitService) getRepository() (*git.Repository, error) {
+	// Clone repository using in-memory storage
+	r, _ := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
+		URL: g.RepoURL,
+		Auth: &http.BasicAuth{
+			Username: "git-user",
+			Password: g.Token,
+		},
+	})
+
+	// Checkout branch
+	return g.checkoutBranch(*r)
+}
+
+func (g *GitService) checkoutBranch(r git.Repository) (*git.Repository, error) {
+	// Fetch worktree
+	w, err := r.Worktree()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Checkout remote branch
+	err = w.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewRemoteReferenceName("origin", g.BranchName),
+	})
+
+	return &r, err
 }

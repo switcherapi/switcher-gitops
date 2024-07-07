@@ -12,6 +12,9 @@ import (
 
 func TestInitCoreHandlerCoroutine(t *testing.T) {
 	// Given
+	fakeGitService := NewFakeGitService()
+	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService)
+
 	account := givenAccount()
 	coreHandler.AccountRepository.Create(&account)
 
@@ -108,8 +111,8 @@ func NewFakeGitService() *FakeGitService {
 	}
 }
 
-func (f *FakeGitService) GetRepositoryData() (string, string, string) {
-	return f.lastCommit, f.date, f.content
+func (f *FakeGitService) GetRepositoryData(environment string) (string, string, string, error) {
+	return f.lastCommit, f.date, f.content, nil
 }
 
 func (f *FakeGitService) CheckForChanges(account model.Account, lastCommit string,
