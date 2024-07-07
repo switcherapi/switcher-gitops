@@ -36,6 +36,9 @@ jobs:
         GO_ENV: test
         MONGODB_URI: mongodb://127.0.0.1:27017
         MONGO_DB: switcher-gitops-test
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        GIT_REPO_URL: ${{ secrets.GIT_REPO_URL }}
+        GIT_BRANCH: ${{ secrets.GIT_BRANCH }}
 
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@v2.0.2
