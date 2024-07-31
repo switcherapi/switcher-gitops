@@ -1,0 +1,40 @@
+{
+  "domain": {
+    "group": [
+      {
+        "name": "Release 1",
+        "description": "Showcase configuration",
+        "activated": true,
+        "config": [
+          {
+            "key": "MY_SWITCHER_1",
+            "description": "My first switcher",
+            "activated": true,
+            "strategies": [
+              {
+                "strategy": "VALUE_VALIDATION",
+                "activated": false,
+                "operation": "EXIST",
+                "values": [
+                  "user_1"
+                ]
+              }
+            ],
+            "components": [
+              "switcher-playground"
+            ]
+          },
+          {
+            "key": "MY_SWITCHER_2",
+            "description": "",
+            "activated": false,
+            "strategies": [],
+            "components": [
+              "switcher-playground"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
