@@ -26,6 +26,12 @@ func TestFormatJSONError(t *testing.T) {
 	AssertNotNil(t, actual)
 }
 
+func TestReadJsonFileToObject(t *testing.T) {
+	json := ReadJsonFromFile("../../resources/fixtures/default.json")
+	AssertNotNil(t, json)
+	AssertContains(t, json, "Release 1")
+}
+
 // Fixtures
 
 func givenAccount(active bool) model.Account {

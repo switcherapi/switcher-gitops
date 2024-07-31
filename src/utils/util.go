@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 )
 
 func FormatJSON(jsonString string) string {
@@ -12,6 +13,16 @@ func FormatJSON(jsonString string) string {
 		return jsonString
 	}
 	return string(prettyJSON.String())
+}
+
+func ReadJsonFromFile(path string) string {
+	file, _ := os.Open(path)
+	defer file.Close()
+
+	stat, _ := file.Stat()
+	bs := make([]byte, stat.Size())
+	file.Read(bs)
+	return string(bs)
 }
 
 func ToJsonFromObject(object interface{}) string {

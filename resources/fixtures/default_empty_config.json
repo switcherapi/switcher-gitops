@@ -1,0 +1,12 @@
+{
+  "domain": {
+    "group": [
+      {
+        "name": "Release 1",
+        "description": "Showcase configuration",
+        "activated": true,
+        "config": []
+      }
+    ]
+  }
+}
