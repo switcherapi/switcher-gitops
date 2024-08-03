@@ -14,7 +14,6 @@ import (
 
 type IGitService interface {
 	GetRepositoryData(environment string) (string, string, string, error)
-	CheckForChanges(account model.Account, lastCommit string, date string, content string) (status string, message string)
 }
 
 type GitService struct {
@@ -39,11 +38,6 @@ func (g *GitService) GetRepositoryData(environment string) (string, string, stri
 	}
 
 	return commitHash, commitDate.Format(time.ANSIC), content, nil
-}
-
-func (g *GitService) CheckForChanges(account model.Account, lastCommit string,
-	date string, content string) (status string, message string) {
-	return model.StatusSynced, "Synced successfully"
 }
 
 func (g *GitService) getLastCommitData(filePath string) (string, time.Time, string, error) {

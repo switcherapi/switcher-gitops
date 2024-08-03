@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/config"
-	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
 const (
@@ -88,28 +87,6 @@ func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
 	assert.Empty(t, lastCommit)
 	assert.Empty(t, date)
 	assert.Empty(t, content)
-}
-
-func TestCheckForChanges(t *testing.T) {
-	if !canRunTests() {
-		t.Skip(SkipMessage)
-	}
-
-	// Given
-	gitService := NewGitService(
-		config.GetEnv("GIT_REPO_URL"),
-		config.GetEnv("GIT_TOKEN"),
-		config.GetEnv("GIT_BRANCH"))
-
-	account := givenAccount()
-	lastCommit, date, content, _ := gitService.GetRepositoryData(account.Environment)
-
-	// Test
-	status, message := gitService.CheckForChanges(account, lastCommit, date, content)
-
-	// Assert
-	assert.Equal(t, model.StatusSynced, status)
-	assert.Equal(t, "Synced successfully", message)
 }
 
 // Helpers

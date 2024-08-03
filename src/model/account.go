@@ -31,6 +31,7 @@ type DomainDetails struct {
 	Name       string `json:"name"`
 	Version    string `json:"version"`
 	LastCommit string `json:"lastcommit"`
+	LastDate   string `json:"lastdate"`
 	Status     string `json:"status"`
 	Message    string `json:"message"`
 }

@@ -29,7 +29,8 @@ func setup() {
 
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
 	gitService := NewGitService("repoURL", "token", "main")
-	coreHandler = NewCoreHandler(accountRepository, gitService)
+	comparatorService := NewComparatorService()
+	coreHandler = NewCoreHandler(accountRepository, gitService, comparatorService)
 }
 
 func shutdown() {
@@ -49,12 +50,13 @@ func givenAccount() model.Account {
 			Name:       "Switcher GitOps",
 			Version:    "",
 			LastCommit: "",
+			LastDate:   "",
 			Status:     "",
 			Message:    "",
 		},
 		Settings: model.Settings{
 			Active:     true,
-			Window:     "10m",
+			Window:     "5s",
 			ForcePrune: false,
 		},
 	}

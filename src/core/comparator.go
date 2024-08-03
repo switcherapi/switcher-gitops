@@ -10,6 +10,14 @@ import (
 type DiffType string
 type DiffResult string
 
+type IComparatorService interface {
+	CheckSnapshotDiff(left model.Snapshot, right model.Snapshot, diffType DiffType) model.DiffResult
+	MergeResults(diffResults []model.DiffResult) model.DiffResult
+	NewSnapshotFromJson(jsonData []byte) model.Snapshot
+}
+
+type ComparatorService struct{}
+
 const (
 	NEW     DiffType = "NEW"
 	CHANGED DiffType = "CHANGED"
@@ -22,18 +30,22 @@ const (
 	COMPONENT      DiffResult = "COMPONENT"
 )
 
-func NewSnapshotFromJson(jsonData []byte) model.Snapshot {
+func NewComparatorService() *ComparatorService {
+	return &ComparatorService{}
+}
+
+func (c *ComparatorService) NewSnapshotFromJson(jsonData []byte) model.Snapshot {
 	var snapshot model.Snapshot
 	json.Unmarshal(jsonData, &snapshot)
 	return snapshot
 }
 
-func CheckSnapshotDiff(left model.Snapshot, right model.Snapshot, diffType DiffType) model.DiffResult {
+func (c *ComparatorService) CheckSnapshotDiff(left model.Snapshot, right model.Snapshot, diffType DiffType) model.DiffResult {
 	diffResult := model.DiffResult{}
 	return checkGroupDiff(left, right, diffType, diffResult)
 }
 
-func MergeResults(diffResults []model.DiffResult) model.DiffResult {
+func (c *ComparatorService) MergeResults(diffResults []model.DiffResult) model.DiffResult {
 	var result model.DiffResult
 
 	for _, diffResult := range diffResults {
