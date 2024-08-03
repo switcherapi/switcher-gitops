@@ -13,7 +13,7 @@ import (
 func TestInitCoreHandlerCoroutine(t *testing.T) {
 	// Given
 	fakeGitService := NewFakeGitService()
-	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService)
+	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, NewComparatorService())
 
 	account := givenAccount()
 	coreHandler.AccountRepository.Create(&account)
@@ -58,7 +58,7 @@ func TestStartAccountHandler(t *testing.T) {
 	fakeGitService := NewFakeGitService()
 	fakeGitService.status = model.StatusSynced
 	fakeGitService.message = "Synced successfully"
-	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService)
+	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, NewComparatorService())
 
 	account := givenAccount()
 	coreHandler.AccountRepository.Create(&account)
@@ -81,6 +81,7 @@ func TestStartAccountHandler(t *testing.T) {
 	assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 	assert.Equal(t, "Synced successfully", accountFromDb.Domain.Message)
 	assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+	assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 	tearDown()
 }

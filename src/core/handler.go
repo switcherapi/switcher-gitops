@@ -11,13 +11,15 @@ import (
 type CoreHandler struct {
 	AccountRepository repository.AccountRepository
 	GitService        IGitService
+	ComparatorService IComparatorService
 	status            int
 }
 
-func NewCoreHandler(repo repository.AccountRepository, gitService IGitService) *CoreHandler {
+func NewCoreHandler(repo repository.AccountRepository, gitService IGitService, comparatorService IComparatorService) *CoreHandler {
 	return &CoreHandler{
 		AccountRepository: repo,
 		GitService:        gitService,
+		ComparatorService: comparatorService,
 	}
 }
 
@@ -44,7 +46,7 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 	}
 
 	// Reads Window setting
-	sleep := 1
+	timeWindow, unitWindow := getTimeWindow(account.Settings.Window)
 
 	for {
 		select {
@@ -58,19 +60,59 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 			}
 		}
 
-		time.Sleep(time.Duration(sleep) * time.Second)
+		time.Sleep(time.Duration(timeWindow) * unitWindow)
 	}
 }
 
 func (c *CoreHandler) syncUp(account model.Account, lastCommit string, date string, content string) {
-	status, message := c.GitService.CheckForChanges(account, lastCommit, date, content)
-
+	// Update account status: Out of sync
 	account.Domain.LastCommit = lastCommit
-	account.Domain.Status = status
-	account.Domain.Message = message
+	account.Domain.LastDate = date
+	account.Domain.Status = model.StatusOutSync
+	account.Domain.Message = "Syncing up..."
 	c.AccountRepository.Update(&account)
+
+	// Check for changes
+	diff := c.checkForChanges(content)
+
+	// Apply changes
+	c.applyChanges(account, diff)
+
+	// Update account status: Synced
+	account.Domain.Status = model.StatusSynced
+	account.Domain.Message = "Synced successfully"
+	c.AccountRepository.Update(&account)
+}
+
+func (c *CoreHandler) checkForChanges(content string) model.DiffResult {
+	// Get Snapshot from API
+
+	// Convert API JSON to model.Snapshot
+	jsonLeft := []byte(content)
+	left := c.ComparatorService.NewSnapshotFromJson(jsonLeft)
+
+	// Convert content to model.Snapshot
+	jsonRight := []byte(content)
+	right := c.ComparatorService.NewSnapshotFromJson(jsonRight)
+
+	// Compare Snapshots and get diff
+	diffNew := c.ComparatorService.CheckSnapshotDiff(left, right, NEW)
+	diffChanged := c.ComparatorService.CheckSnapshotDiff(left, right, CHANGED)
+	diffDeleted := c.ComparatorService.CheckSnapshotDiff(left, right, DELETED)
+
+	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted})
+}
+
+func (c *CoreHandler) applyChanges(account model.Account, diff model.DiffResult) {
+	// Apply changes
 }
 
 func isRepositoryOutSync(account model.Account, lastCommit string) bool {
 	return account.Domain.LastCommit == "" || account.Domain.LastCommit != lastCommit
+}
+
+func getTimeWindow(window string) (int, time.Duration) {
+	// Convert window string to time.Duration
+	duration, _ := time.ParseDuration(window)
+	return 1, duration
 }
