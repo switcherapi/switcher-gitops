@@ -36,6 +36,8 @@ jobs:
         GO_ENV: test
         MONGODB_URI: mongodb://127.0.0.1:27017
         MONGO_DB: switcher-gitops-test
+        SWITCHER_API_URL: ${{ secrets.SWITCHER_API_URL }}
+        SWITCHER_API_JWT_SECRET: ${{ secrets.SWITCHER_API_JWT_SECRET }}
         API_DOMAIN_ID: ${{ secrets.API_DOMAIN_ID }}
         GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
         GIT_REPO_URL: ${{ secrets.GIT_REPO_URL }}
