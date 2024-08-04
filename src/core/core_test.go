@@ -38,6 +38,13 @@ func shutdown() {
 	mongoDb.Client().Disconnect(context.Background())
 }
 
+func canRunIntegratedTests() bool {
+	return config.GetEnv("GIT_REPO_URL") != "" &&
+		config.GetEnv("GIT_TOKEN") != "" &&
+		config.GetEnv("GIT_BRANCH") != "" &&
+		config.GetEnv("API_DOMAIN_ID") != ""
+}
+
 // Fixtures
 
 func givenAccount() model.Account {

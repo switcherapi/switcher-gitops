@@ -27,7 +27,7 @@ func TestNewGitService(t *testing.T) {
 }
 
 func TestGetRepositoryData(t *testing.T) {
-	if !canRunTests() {
+	if !canRunIntegratedTests() {
 		t.Skip(SkipMessage)
 	}
 
@@ -48,7 +48,7 @@ func TestGetRepositoryData(t *testing.T) {
 }
 
 func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
-	if !canRunTests() {
+	if !canRunIntegratedTests() {
 		t.Skip(SkipMessage)
 	}
 
@@ -69,7 +69,7 @@ func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
 }
 
 func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
-	if !canRunTests() {
+	if !canRunIntegratedTests() {
 		t.Skip(SkipMessage)
 	}
 
@@ -87,10 +87,4 @@ func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
 	assert.Empty(t, lastCommit)
 	assert.Empty(t, date)
 	assert.Empty(t, content)
-}
-
-// Helpers
-
-func canRunTests() bool {
-	return config.GetEnv("GIT_REPO_URL") != "" && config.GetEnv("GIT_TOKEN") != "" && config.GetEnv("GIT_BRANCH") != ""
 }
