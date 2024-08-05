@@ -1,7 +1,6 @@
 package core
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,22 +10,24 @@ import (
 
 const DEFAULT_JSON = "../../resources/fixtures/default.json"
 
-func TestCheckSnapshotDiffGroupChange(t *testing.T) {
-	// Given
+func TestCheckGroupSnapshot(t *testing.T) {
 	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_group.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+	t.Run("Should return changes in group", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_group.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "CHANGED",
@@ -39,26 +40,24 @@ func TestCheckSnapshotDiffGroupChange(t *testing.T) {
 					"description": "New description"
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffNewGroup(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_group.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return new group", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_group.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "NEW",
@@ -79,64 +78,24 @@ func TestCheckSnapshotDiffNewGroup(t *testing.T) {
 					]
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffNewGroupFromEmptyGroup(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty.json")
-	jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return deleted group", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_group.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.Equal(t, "NEW", actual.Changes[0].Action)
-	assert.Equal(t, "GROUP", actual.Changes[0].Diff)
-}
-
-func TestCheckSnapshotDiffNewGroupFromEmptyConfig(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty_config.json")
-	jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
-
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
-
-	AssertNotNil(t, actual)
-	assert.Equal(t, "NEW", actual.Changes[0].Action)
-	assert.Equal(t, "CONFIG", actual.Changes[0].Diff)
-}
-
-func TestCheckSnapshotDiffDeletedGroup(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_group.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
-
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
-
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "DELETED",
@@ -146,26 +105,64 @@ func TestCheckSnapshotDiffDeletedGroup(t *testing.T) {
 				],
 				"content": null
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
+	t.Run("Should return new group from empty group", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty.json")
+		jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.Equal(t, "NEW", actual.Changes[0].Action)
+		assert.Equal(t, "GROUP", actual.Changes[0].Diff)
+	})
+
+	t.Run("Should return new group from empty config", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty_config.json")
+		jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.Equal(t, "NEW", actual.Changes[0].Action)
+		assert.Equal(t, "CONFIG", actual.Changes[0].Diff)
+	})
 }
 
-func TestCheckSnapshotDiffConfigChange(t *testing.T) {
-	// Given
+func TestCheckConfigSnapshot(t *testing.T) {
 	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_config.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+	t.Run("Should return changes in config", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_config.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "CHANGED",
@@ -179,26 +176,24 @@ func TestCheckSnapshotDiffConfigChange(t *testing.T) {
 					"description": "New description"
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffNewConfig(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_config.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return new config", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_config.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "NEW",
@@ -214,26 +209,24 @@ func TestCheckSnapshotDiffNewConfig(t *testing.T) {
 					]
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffDeletedConfig(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_config.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return deleted config", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_config.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "DELETED",
@@ -244,26 +237,28 @@ func TestCheckSnapshotDiffDeletedConfig(t *testing.T) {
 				],
 				"content": null
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
+		]}`, utils.ToJsonFromObject(actual))
+	})
 }
 
-func TestCheckSnapshotDiffStrategyChange(t *testing.T) {
-	// Given
+func TestCheckStrategySnapshot(t *testing.T) {
 	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_strategy.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+	t.Run("Should return changes in strategy", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_strategy.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "CHANGED",
@@ -277,26 +272,24 @@ func TestCheckSnapshotDiffStrategyChange(t *testing.T) {
 					"activated": true
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffNewStrategy(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return new strategy", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "NEW",
@@ -314,26 +307,24 @@ func TestCheckSnapshotDiffNewStrategy(t *testing.T) {
 					]
 				}
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffDeletedStrategy(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return deleted strategy", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "DELETED",
@@ -345,26 +336,24 @@ func TestCheckSnapshotDiffDeletedStrategy(t *testing.T) {
 				],
 				"content": null
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffStrategyValueChange(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy_value.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return new strategy value", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy_value.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "NEW",
@@ -378,26 +367,24 @@ func TestCheckSnapshotDiffStrategyValueChange(t *testing.T) {
 					"user_2"
 				]
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffDeletedStrategyValue(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy_value.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return deleted strategy value", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy_value.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "DELETED",
@@ -411,26 +398,28 @@ func TestCheckSnapshotDiffDeletedStrategyValue(t *testing.T) {
 					"user_1"
 				]
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
+		]}`, utils.ToJsonFromObject(actual))
+	})
 }
 
-func TestCheckSnapshotDiffNewComponent(t *testing.T) {
-	// Given
+func TestCheckComponentSnapshot(t *testing.T) {
 	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_component.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+	t.Run("Should return new component", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_component.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "NEW",
@@ -443,26 +432,24 @@ func TestCheckSnapshotDiffNewComponent(t *testing.T) {
 					"new_component"
 				]
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 
-func TestCheckSnapshotDiffDeletedComponent(t *testing.T) {
-	// Given
-	c := NewComparatorService()
-	jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-	jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_component.json")
-	snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
-	snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
+	t.Run("Should return deleted component", func(t *testing.T) {
+		// Given
+		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_component.json")
+		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
+		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
-	// Test Check/Merge changes
-	diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
-	diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
-	diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
-	actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, CHANGED)
+		diffNew := c.CheckSnapshotDiff(snapshotRight, snapshotLeft, NEW)
+		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-	AssertNotNil(t, actual)
-	assert.JSONEq(t, `{
+		AssertNotNil(t, actual)
+		assert.JSONEq(t, `{
 		"changes": [
 			{
 				"action": "DELETED",
@@ -475,20 +462,6 @@ func TestCheckSnapshotDiffDeletedComponent(t *testing.T) {
 					"benchmark"
 				]
 			}
-		]
-	}`, utils.ToJsonFromObject(actual))
-}
-
-// Helpers
-
-func AssertNotNil(t *testing.T, object interface{}) {
-	if object == nil {
-		t.Errorf("Object is nil")
-	}
-}
-
-func AssertContains(t *testing.T, actual string, expected string) {
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Expected %v to contain %v", actual, expected)
-	}
+		]}`, utils.ToJsonFromObject(actual))
+	})
 }

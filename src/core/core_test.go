@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -38,11 +39,25 @@ func shutdown() {
 	mongoDb.Client().Disconnect(context.Background())
 }
 
+// Helpers
+
 func canRunIntegratedTests() bool {
 	return config.GetEnv("GIT_REPO_URL") != "" &&
 		config.GetEnv("GIT_TOKEN") != "" &&
 		config.GetEnv("GIT_BRANCH") != "" &&
 		config.GetEnv("API_DOMAIN_ID") != ""
+}
+
+func AssertNotNil(t *testing.T, object interface{}) {
+	if object == nil {
+		t.Errorf("Object is nil")
+	}
+}
+
+func AssertContains(t *testing.T, actual string, expected string) {
+	if !strings.Contains(actual, expected) {
+		t.Errorf("Expected %v to contain %v", actual, expected)
+	}
 }
 
 // Fixtures
