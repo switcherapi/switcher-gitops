@@ -22,6 +22,16 @@ func TestFetchSnapshot(t *testing.T) {
 		assert.Contains(t, snapshot, "config", "Missing config in snapshot")
 	})
 
+	t.Run("Should return data from snapshot", func(t *testing.T) {
+		apiService := NewApiService(config.GetEnv("SWITCHER_API_JWT_SECRET"), config.GetEnv("SWITCHER_API_URL"))
+		snapshot, _ := apiService.FetchSnapshot(config.GetEnv("API_DOMAIN_ID"), "default")
+		data := apiService.NewDataFromJson([]byte(snapshot))
+
+		assert.NotNil(t, data.Snapshot.Domain, "domain", "Missing domain in data")
+		assert.NotNil(t, data.Snapshot.Domain.Group, "group", "Missing groups in data")
+		assert.NotNil(t, data.Snapshot.Domain.Group[0].Config, "config", "Missing config in data")
+	})
+
 	t.Run("Should return error - invalid API key", func(t *testing.T) {
 		apiService := NewApiService("INVALID_KEY", config.GetEnv("SWITCHER_API_URL"))
 		snapshot, _ := apiService.FetchSnapshot(config.GetEnv("API_DOMAIN_ID"), "default")
