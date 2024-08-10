@@ -53,10 +53,10 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 		case <-quit:
 			return
 		default:
-			lastCommit, date, content, err := c.GitService.GetRepositoryData(account.Environment)
+			repositoryData, err := c.GitService.GetRepositoryData(account.Environment)
 
-			if err == nil && isRepositoryOutSync(account, lastCommit) {
-				c.syncUp(account, lastCommit, date, content)
+			if err == nil && isRepositoryOutSync(account, repositoryData.CommitHash) {
+				c.syncUp(account, repositoryData)
 			}
 		}
 
@@ -64,16 +64,16 @@ func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool,
 	}
 }
 
-func (c *CoreHandler) syncUp(account model.Account, lastCommit string, date string, content string) {
+func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.RepositoryData) {
 	// Update account status: Out of sync
-	account.Domain.LastCommit = lastCommit
-	account.Domain.LastDate = date
+	account.Domain.LastCommit = repositoryData.CommitHash
+	account.Domain.LastDate = repositoryData.CommitDate
 	account.Domain.Status = model.StatusOutSync
 	account.Domain.Message = "Syncing up..."
 	c.AccountRepository.Update(&account)
 
 	// Check for changes
-	diff := c.checkForChanges(content)
+	diff := c.checkForChanges(repositoryData.Content)
 
 	// Apply changes
 	c.applyChanges(account, diff)

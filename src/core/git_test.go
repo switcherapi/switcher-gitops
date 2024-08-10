@@ -38,13 +38,13 @@ func TestGetRepositoryData(t *testing.T) {
 		config.GetEnv("GIT_BRANCH"))
 
 	// Test
-	lastCommit, date, content, err := gitService.GetRepositoryData("default")
+	repositoryData, err := gitService.GetRepositoryData("default")
 
 	// Assert
 	assert.Nil(t, err)
-	assert.NotEmpty(t, lastCommit)
-	assert.NotEmpty(t, date)
-	assert.NotEmpty(t, content)
+	assert.NotEmpty(t, repositoryData.CommitHash)
+	assert.NotEmpty(t, repositoryData.CommitDate)
+	assert.NotEmpty(t, repositoryData.Content)
 }
 
 func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
@@ -59,13 +59,11 @@ func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
 		config.GetEnv("GIT_BRANCH"))
 
 	// Test
-	lastCommit, date, content, err := gitService.GetRepositoryData("invalid")
+	repositoryData, err := gitService.GetRepositoryData("invalid")
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, lastCommit)
-	assert.Empty(t, date)
-	assert.Empty(t, content)
+	assert.Nil(t, repositoryData)
 }
 
 func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
@@ -80,11 +78,9 @@ func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
 		config.GetEnv("GIT_BRANCH"))
 
 	// Test
-	lastCommit, date, content, err := gitService.GetRepositoryData("default")
+	repositoryData, err := gitService.GetRepositoryData("default")
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, lastCommit)
-	assert.Empty(t, date)
-	assert.Empty(t, content)
+	assert.Nil(t, repositoryData)
 }

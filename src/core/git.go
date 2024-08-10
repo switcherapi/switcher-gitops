@@ -13,7 +13,7 @@ import (
 )
 
 type IGitService interface {
-	GetRepositoryData(environment string) (string, string, string, error)
+	GetRepositoryData(environment string) (*model.RepositoryData, error)
 }
 
 type GitService struct {
@@ -30,14 +30,18 @@ func NewGitService(repoURL string, token string, branchName string) *GitService 
 	}
 }
 
-func (g *GitService) GetRepositoryData(environment string) (string, string, string, error) {
+func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
 	commitHash, commitDate, content, err := g.getLastCommitData(model.FilePath + environment + ".json")
 
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 
-	return commitHash, commitDate.Format(time.ANSIC), content, nil
+	return &model.RepositoryData{
+		CommitHash: commitHash,
+		CommitDate: commitDate.Format(time.ANSIC),
+		Content:    content,
+	}, nil
 }
 
 func (g *GitService) getLastCommitData(filePath string) (string, time.Time, string, error) {

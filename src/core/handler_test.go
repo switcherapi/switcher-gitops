@@ -112,8 +112,12 @@ func NewFakeGitService() *FakeGitService {
 	}
 }
 
-func (f *FakeGitService) GetRepositoryData(environment string) (string, string, string, error) {
-	return f.lastCommit, f.date, f.content, nil
+func (f *FakeGitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
+	return &model.RepositoryData{
+		CommitHash: f.lastCommit,
+		CommitDate: f.date,
+		Content:    f.content,
+	}, nil
 }
 
 func (f *FakeGitService) CheckForChanges(account model.Account, lastCommit string,
