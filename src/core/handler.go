@@ -11,14 +11,16 @@ import (
 type CoreHandler struct {
 	AccountRepository repository.AccountRepository
 	GitService        IGitService
+	ApiService        IAPIService
 	ComparatorService IComparatorService
 	status            int
 }
 
-func NewCoreHandler(repo repository.AccountRepository, gitService IGitService, comparatorService IComparatorService) *CoreHandler {
+func NewCoreHandler(repo repository.AccountRepository, gitService IGitService, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
 	return &CoreHandler{
 		AccountRepository: repo,
 		GitService:        gitService,
+		ApiService:        apiService,
 		ComparatorService: comparatorService,
 	}
 }
@@ -73,7 +75,15 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	c.AccountRepository.Update(&account)
 
 	// Check for changes
-	diff := c.checkForChanges(repositoryData.Content)
+	diff, err := c.checkForChanges(account.Domain.ID, account.Environment, repositoryData.Content)
+
+	if err != nil {
+		// Update account status: Error
+		account.Domain.Status = model.StatusError
+		account.Domain.Message = "Error syncing up"
+		c.AccountRepository.Update(&account)
+		return
+	}
 
 	// Apply changes
 	c.applyChanges(account, diff)
@@ -84,12 +94,17 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	c.AccountRepository.Update(&account)
 }
 
-func (c *CoreHandler) checkForChanges(content string) model.DiffResult {
+func (c *CoreHandler) checkForChanges(domainId string, environment string, content string) (model.DiffResult, error) {
 	// Get Snapshot from API
+	snapshotJsonFromApi, err := c.ApiService.FetchSnapshot(domainId, environment)
+
+	if err != nil {
+		return model.DiffResult{}, err
+	}
 
 	// Convert API JSON to model.Snapshot
-	jsonLeft := []byte(content)
-	left := c.ComparatorService.NewSnapshotFromJson(jsonLeft)
+	snapshotApi := c.ApiService.NewDataFromJson([]byte(snapshotJsonFromApi))
+	left := snapshotApi.Snapshot
 
 	// Convert content to model.Snapshot
 	jsonRight := []byte(content)
@@ -100,7 +115,7 @@ func (c *CoreHandler) checkForChanges(content string) model.DiffResult {
 	diffChanged := c.ComparatorService.CheckSnapshotDiff(left, right, CHANGED)
 	diffDeleted := c.ComparatorService.CheckSnapshotDiff(left, right, DELETED)
 
-	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted})
+	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), nil
 }
 
 func (c *CoreHandler) applyChanges(account model.Account, diff model.DiffResult) {

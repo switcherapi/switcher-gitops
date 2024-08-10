@@ -7,7 +7,6 @@ const (
 )
 
 const (
-	StatusCreated = "Created"
 	StatusSynced  = "Synced"
 	StatusOutSync = "OutSync"
 	StatusError   = "Error"

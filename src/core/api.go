@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
 type GraphQLRequest struct {
@@ -17,6 +18,7 @@ type GraphQLRequest struct {
 
 type IAPIService interface {
 	FetchSnapshot(domainId string, environment string) (string, error)
+	NewDataFromJson(jsonData []byte) model.Data
 }
 
 type ApiService struct {
@@ -29,6 +31,12 @@ func NewApiService(apiKey string, apiUrl string) *ApiService {
 		ApiKey: apiKey,
 		ApiUrl: apiUrl,
 	}
+}
+
+func (c *ApiService) NewDataFromJson(jsonData []byte) model.Data {
+	var data model.Data
+	json.Unmarshal(jsonData, &data)
+	return data
 }
 
 func (a *ApiService) FetchSnapshot(domainId string, environment string) (string, error) {
