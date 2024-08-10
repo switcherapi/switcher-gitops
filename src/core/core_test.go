@@ -30,8 +30,9 @@ func setup() {
 
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
 	gitService := NewGitService("repoURL", "token", "main")
+	apiService := NewApiService("apiKey", "")
 	comparatorService := NewComparatorService()
-	coreHandler = NewCoreHandler(accountRepository, gitService, comparatorService)
+	coreHandler = NewCoreHandler(accountRepository, gitService, apiService, comparatorService)
 }
 
 func shutdown() {
@@ -73,7 +74,7 @@ func givenAccount() model.Account {
 			Version:    "",
 			LastCommit: "",
 			LastDate:   "",
-			Status:     "",
+			Status:     model.StatusOutSync,
 			Message:    "",
 		},
 		Settings: model.Settings{

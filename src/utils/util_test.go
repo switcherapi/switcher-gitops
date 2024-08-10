@@ -43,7 +43,7 @@ func givenAccount(active bool) model.Account {
 			Name:       "Switcher GitOps",
 			Version:    "123",
 			LastCommit: "123",
-			Status:     "active",
+			Status:     model.StatusSynced,
 			Message:    "Synced successfully",
 		},
 		Settings: model.Settings{

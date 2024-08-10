@@ -65,7 +65,7 @@ var accountV1 = model.Account{
 		Name:       "Switcher GitOps",
 		Version:    "123",
 		LastCommit: "123",
-		Status:     "active",
+		Status:     model.StatusSynced,
 		Message:    "Synced successfully",
 	},
 	Settings: model.Settings{
@@ -83,7 +83,7 @@ var accountV2 = model.Account{
 		Name:       "Switcher GitOps",
 		Version:    "123",
 		LastCommit: "123",
-		Status:     "active",
+		Status:     model.StatusSynced,
 	},
 	Settings: model.Settings{
 		Active:     false,
