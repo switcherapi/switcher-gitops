@@ -70,36 +70,32 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	// Update account status: Out of sync
 	account.Domain.LastCommit = repositoryData.CommitHash
 	account.Domain.LastDate = repositoryData.CommitDate
-	account.Domain.Status = model.StatusOutSync
-	account.Domain.Message = "Syncing up..."
-	c.AccountRepository.Update(&account)
+	c.updateDomainStatus(account, model.StatusOutSync, "Syncing up...")
 
 	// Check for changes
-	diff, err := c.checkForChanges(account.Domain.ID, account.Environment, repositoryData.Content)
+	diff, snapshotApi, err := c.checkForChanges(account.Domain.ID, account.Environment, repositoryData.Content)
 
 	if err != nil {
-		// Update account status: Error
-		account.Domain.Status = model.StatusError
-		account.Domain.Message = "Error syncing up"
-		c.AccountRepository.Update(&account)
+		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes")
 		return
 	}
 
-	// Apply changes
-	c.applyChanges(account, diff)
+	if snapshotApi.Domain.Version > account.Domain.Version {
+		account = c.applyChangesToRepository(account, snapshotApi.Domain)
+	} else if len(diff.Changes) > 0 {
+		account = c.applyChangesToAPI(account, repositoryData)
+	}
 
 	// Update account status: Synced
-	account.Domain.Status = model.StatusSynced
-	account.Domain.Message = "Synced successfully"
-	c.AccountRepository.Update(&account)
+	c.updateDomainStatus(account, model.StatusSynced, "Synced successfully")
 }
 
-func (c *CoreHandler) checkForChanges(domainId string, environment string, content string) (model.DiffResult, error) {
+func (c *CoreHandler) checkForChanges(domainId string, environment string, content string) (model.DiffResult, model.Snapshot, error) {
 	// Get Snapshot from API
 	snapshotJsonFromApi, err := c.ApiService.FetchSnapshot(domainId, environment)
 
 	if err != nil {
-		return model.DiffResult{}, err
+		return model.DiffResult{}, model.Snapshot{}, err
 	}
 
 	// Convert API JSON to model.Snapshot
@@ -115,11 +111,29 @@ func (c *CoreHandler) checkForChanges(domainId string, environment string, conte
 	diffChanged := c.ComparatorService.CheckSnapshotDiff(left, right, CHANGED)
 	diffDeleted := c.ComparatorService.CheckSnapshotDiff(left, right, DELETED)
 
-	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), nil
+	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), snapshotApi.Snapshot, nil
 }
 
-func (c *CoreHandler) applyChanges(account model.Account, diff model.DiffResult) {
-	// Apply changes
+func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *model.RepositoryData) model.Account {
+	// Push changes to API
+	println("Pushing changes to API")
+
+	// Update domain
+	account.Domain.Version = "2"
+	account.Domain.LastCommit = repositoryData.CommitHash
+
+	return account
+}
+
+func (c *CoreHandler) applyChangesToRepository(account model.Account, domain model.Domain) model.Account {
+	// Push changes to repository
+	println("Pushing changes to repository")
+
+	// Update domain
+	account.Domain.Version = domain.Version
+	account.Domain.LastCommit = "111"
+
+	return account
 }
 
 func isRepositoryOutSync(account model.Account, lastCommit string) bool {
@@ -127,7 +141,13 @@ func isRepositoryOutSync(account model.Account, lastCommit string) bool {
 }
 
 func getTimeWindow(window string) (int, time.Duration) {
-	// Convert window string to time.Duration
 	duration, _ := time.ParseDuration(window)
 	return 1, duration
+}
+
+func (c *CoreHandler) updateDomainStatus(account model.Account, status string, message string) {
+	account.Domain.Status = status
+	account.Domain.Message = message
+	account.Domain.LastDate = time.Now().Format(time.ANSIC)
+	c.AccountRepository.Update(&account)
 }

@@ -71,7 +71,7 @@ func givenAccount() model.Account {
 		Domain: model.DomainDetails{
 			ID:         "123",
 			Name:       "Switcher GitOps",
-			Version:    "",
+			Version:    "0",
 			LastCommit: "",
 			LastDate:   "",
 			Status:     model.StatusOutSync,
