@@ -64,6 +64,7 @@ func TestStartAccountHandler(t *testing.T) {
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
+		account.Domain.Version = "1"
 		coreHandler.AccountRepository.Create(&account)
 
 		// Prepare goroutine signals
@@ -82,8 +83,43 @@ func TestStartAccountHandler(t *testing.T) {
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Equal(t, "Synced successfully", accountFromDb.Domain.Message)
+		assert.Contains(t, accountFromDb.Domain.Message, "Synced successfully")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, "2", accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync successfully when API has a newer version", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService(false)
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.Version = "0"
+		coreHandler.AccountRepository.Create(&account)
+
+		// Prepare goroutine signals
+		var wg sync.WaitGroup
+		quit := make(chan bool)
+		wg.Add(1)
+
+		// Test
+		go coreHandler.StartAccountHandler(account, quit, &wg)
+
+		// Wait for the goroutine to run and terminate
+		time.Sleep(1 * time.Second)
+		quit <- true
+		wg.Wait()
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Synced successfully")
+		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, "1", accountFromDb.Domain.Version)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
@@ -114,7 +150,7 @@ func TestStartAccountHandler(t *testing.T) {
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
-		assert.Equal(t, "Error syncing up", accountFromDb.Domain.Message)
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
