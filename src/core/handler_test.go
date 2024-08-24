@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"sync"
 	"testing"
 	"time"
 
@@ -23,6 +22,11 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 	// Test
 	status, err := coreHandler.InitCoreHandlerCoroutine()
 
+	// Terminate the goroutine
+	account.Settings.Active = false
+	coreHandler.AccountRepository.Update(&account)
+	time.Sleep(1 * time.Second)
+
 	// Assert
 	assert.Nil(t, err)
 	assert.Equal(t, 1, status)
@@ -37,16 +41,10 @@ func TestStartAccountHandler(t *testing.T) {
 		account.Settings.Active = false
 		coreHandler.AccountRepository.Create(&account)
 
-		// Prepare goroutine signals
-		var wg sync.WaitGroup
-		wg.Add(1)
-
 		// Test
-		go coreHandler.StartAccountHandler(account, make(chan bool), &wg)
+		go coreHandler.StartAccountHandler(account)
 
-		// Wait for the goroutine to run and terminate
 		time.Sleep(1 * time.Second)
-		wg.Wait()
 
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
@@ -67,18 +65,13 @@ func TestStartAccountHandler(t *testing.T) {
 		account.Domain.Version = "1"
 		coreHandler.AccountRepository.Create(&account)
 
-		// Prepare goroutine signals
-		var wg sync.WaitGroup
-		quit := make(chan bool)
-		wg.Add(1)
-
 		// Test
-		go coreHandler.StartAccountHandler(account, quit, &wg)
+		go coreHandler.StartAccountHandler(account)
 
-		// Wait for the goroutine to run and terminate
+		// Terminate the goroutine
+		account.Settings.Active = false
+		coreHandler.AccountRepository.Update(&account)
 		time.Sleep(1 * time.Second)
-		quit <- true
-		wg.Wait()
 
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
@@ -103,18 +96,13 @@ func TestStartAccountHandler(t *testing.T) {
 		account.Domain.Version = "0"
 		coreHandler.AccountRepository.Create(&account)
 
-		// Prepare goroutine signals
-		var wg sync.WaitGroup
-		quit := make(chan bool)
-		wg.Add(1)
-
 		// Test
-		go coreHandler.StartAccountHandler(account, quit, &wg)
+		go coreHandler.StartAccountHandler(account)
 
-		// Wait for the goroutine to run and terminate
+		// Terminate the goroutine
+		account.Settings.Active = false
+		coreHandler.AccountRepository.Update(&account)
 		time.Sleep(1 * time.Second)
-		quit <- true
-		wg.Wait()
 
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
@@ -136,18 +124,13 @@ func TestStartAccountHandler(t *testing.T) {
 		account := givenAccount()
 		coreHandler.AccountRepository.Create(&account)
 
-		// Prepare goroutine signals
-		var wg sync.WaitGroup
-		quit := make(chan bool)
-		wg.Add(1)
-
 		// Test
-		go coreHandler.StartAccountHandler(account, quit, &wg)
+		go coreHandler.StartAccountHandler(account)
 
-		// Wait for the goroutine to run and terminate
+		// Terminate the goroutine
+		account.Settings.Active = false
+		coreHandler.AccountRepository.Update(&account)
 		time.Sleep(1 * time.Second)
-		quit <- true
-		wg.Wait()
 
 		// Assert
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)

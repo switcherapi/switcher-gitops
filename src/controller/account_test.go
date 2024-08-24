@@ -12,6 +12,8 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
+const NOT_FOUND = "/not-found"
+
 func TestCreateAccountHandler(t *testing.T) {
 	t.Run("Should create an account", func(t *testing.T) {
 		// Test
@@ -61,7 +63,7 @@ func TestFetchAccountHandler(t *testing.T) {
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -76,7 +78,7 @@ func TestFetchAccountHandler(t *testing.T) {
 	t.Run("Should not fetch an account by domain ID - not found", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/111", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+NOT_FOUND, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -92,7 +94,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(accountV2)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV2.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -107,7 +109,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 	t.Run("Should not update an account - invalid request", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/invalid-request", bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -125,7 +127,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(accountV1Copy)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/123", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+NOT_FOUND, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -140,7 +142,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/123", nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, nil)
 		response := executeRequest(req)
 
 		// Assert
@@ -149,12 +151,12 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 	t.Run("Should not delete an account - not found", func(t *testing.T) {
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/111", nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+NOT_FOUND, nil)
 		response := executeRequest(req)
 
 		// Assert
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
-		assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: 111\"}", response.Body.String())
+		assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: not-found\"}", response.Body.String())
 	})
 }
 

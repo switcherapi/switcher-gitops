@@ -1,7 +1,6 @@
 package core
 
 import (
-	"sync"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/model"
@@ -32,7 +31,7 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 
 	// Iterate over accounts and start account handlers
 	for _, account := range accounts {
-		go c.StartAccountHandler(account, make(chan bool), &sync.WaitGroup{})
+		go c.StartAccountHandler(account)
 	}
 
 	// Update core handler status
@@ -40,27 +39,19 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 	return c.status, nil
 }
 
-func (c *CoreHandler) StartAccountHandler(account model.Account, quit chan bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	// Check if account is not active
-	if !account.Settings.Active {
-		return
-	}
-
-	// Reads Window setting
-	timeWindow, unitWindow := getTimeWindow(account.Settings.Window)
-
+func (c *CoreHandler) StartAccountHandler(account model.Account) {
 	for {
-		select {
-		case <-quit:
+		if !account.Settings.Active {
 			return
-		default:
-			repositoryData, err := c.GitService.GetRepositoryData(account.Environment)
+		}
 
-			if err == nil && isRepositoryOutSync(account, repositoryData.CommitHash) {
-				c.syncUp(account, repositoryData)
-			}
+		account, _ := c.AccountRepository.FetchByDomainId(account.Domain.ID)
+		timeWindow, unitWindow := getTimeWindow(account.Settings.Window)
+
+		repositoryData, err := c.GitService.GetRepositoryData(account.Environment)
+
+		if err == nil && isRepositoryOutSync(*account, repositoryData.CommitHash) {
+			c.syncUp(*account, repositoryData)
 		}
 
 		time.Sleep(time.Duration(timeWindow) * unitWindow)

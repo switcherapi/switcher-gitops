@@ -61,7 +61,7 @@ var accountV1 = model.Account{
 	Repository: "switcherapi/switcher-gitops",
 	Branch:     "master",
 	Domain: model.DomainDetails{
-		ID:         "123",
+		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
 		Version:    "123",
 		LastCommit: "123",
@@ -79,7 +79,7 @@ var accountV2 = model.Account{
 	Repository: "switcherapi/switcher-gitops",
 	Branch:     "master",
 	Domain: model.DomainDetails{
-		ID:         "123",
+		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
 		Version:    "123",
 		LastCommit: "123",
