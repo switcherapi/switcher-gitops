@@ -3,6 +3,7 @@ package core
 import (
 	"time"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -14,6 +15,7 @@ import (
 
 type IGitService interface {
 	GetRepositoryData(environment string) (*model.RepositoryData, error)
+	PushChanges(environment string, content string) (string, error)
 }
 
 type GitService struct {
@@ -44,6 +46,51 @@ func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryDat
 	}, nil
 }
 
+func (g *GitService) PushChanges(environment string, content string) (string, error) {
+	// Create an in-memory file system
+	fs := memfs.New()
+
+	// Get the repository & Clone repository using in-memory storage
+	r, _ := g.getRepository(fs)
+
+	// Write the content to the in-memory file
+	filePath := model.FilePath + environment + ".json"
+	file, _ := fs.Create(filePath)
+	file.Write([]byte(content))
+	file.Close()
+
+	// Get the worktree
+	w, _ := r.Worktree()
+
+	// Add the file to the worktree
+	w.Add(filePath)
+
+	// Commit the changes
+	commit, _ := w.Commit("[switcher-gitops] updated "+environment+".json", g.createCommitOptions())
+
+	// Push the changes
+	err := r.Push(&git.PushOptions{
+		Force: true,
+		Auth:  g.getAuth(),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return commit.String(), nil
+}
+
+func (g *GitService) createCommitOptions() *git.CommitOptions {
+	return &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Switcher GitOps",
+			Email: "switcher.gitops.no-reply@switcherapi.com",
+			When:  time.Now(),
+		},
+	}
+}
+
 func (g *GitService) getLastCommitData(filePath string) (string, time.Time, string, error) {
 	c, err := g.getCommitObject()
 
@@ -69,7 +116,7 @@ func (g *GitService) getLastCommitData(filePath string) (string, time.Time, stri
 }
 
 func (g *GitService) getCommitObject() (*object.Commit, error) {
-	r, err := g.getRepository()
+	r, err := g.getRepository(memfs.New())
 
 	if err != nil {
 		return nil, err
@@ -82,32 +129,17 @@ func (g *GitService) getCommitObject() (*object.Commit, error) {
 	return r.CommitObject(ref.Hash())
 }
 
-func (g *GitService) getRepository() (*git.Repository, error) {
-	// Clone repository using in-memory storage
-	r, _ := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
-		URL: g.RepoURL,
-		Auth: &http.BasicAuth{
-			Username: "git-user",
-			Password: g.Token,
-		},
+func (g *GitService) getRepository(fs billy.Filesystem) (*git.Repository, error) {
+	return git.Clone(memory.NewStorage(), fs, &git.CloneOptions{
+		URL:           g.RepoURL,
+		ReferenceName: plumbing.NewBranchReferenceName(g.BranchName),
+		Auth:          g.getAuth(),
 	})
-
-	// Checkout branch
-	return g.checkoutBranch(*r)
 }
 
-func (g *GitService) checkoutBranch(r git.Repository) (*git.Repository, error) {
-	// Fetch worktree
-	w, err := r.Worktree()
-
-	if err != nil {
-		return nil, err
+func (g *GitService) getAuth() *http.BasicAuth {
+	return &http.BasicAuth{
+		Username: "git-user",
+		Password: g.Token,
 	}
-
-	// Checkout remote branch
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewRemoteReferenceName("origin", g.BranchName),
-	})
-
-	return &r, err
 }

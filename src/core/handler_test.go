@@ -94,6 +94,8 @@ func TestStartAccountHandler(t *testing.T) {
 	t.Run("Should sync successfully when API has a newer version", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
+		fakeGitService.lastCommit = "111"
+
 		fakeApiService := NewFakeApiService(false)
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
@@ -172,7 +174,6 @@ type FakeGitService struct {
 	date       string
 	content    string
 	status     string
-	message    string
 }
 
 func NewFakeGitService() *FakeGitService {
@@ -209,9 +210,8 @@ func (f *FakeGitService) GetRepositoryData(environment string) (*model.Repositor
 	}, nil
 }
 
-func (f *FakeGitService) CheckForChanges(account model.Account, lastCommit string,
-	date string, content string) (status string, message string) {
-	return f.status, f.message
+func (f *FakeGitService) PushChanges(environment string, content string) (string, error) {
+	return f.lastCommit, nil
 }
 
 type FakeApiService struct {
