@@ -39,7 +39,7 @@ func givenAccount(active bool) model.Account {
 		Repository: "switcherapi/switcher-gitops",
 		Branch:     "master",
 		Domain: model.DomainDetails{
-			ID:         "123",
+			ID:         "123-util-test",
 			Name:       "Switcher GitOps",
 			Version:    "123",
 			LastCommit: "123",

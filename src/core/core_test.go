@@ -70,7 +70,7 @@ func givenAccount() model.Account {
 		Branch:      "master",
 		Environment: "default",
 		Domain: model.DomainDetails{
-			ID:         "123",
+			ID:         "123-code-test",
 			Name:       "Switcher GitOps",
 			Version:    "0",
 			LastCommit: "",
