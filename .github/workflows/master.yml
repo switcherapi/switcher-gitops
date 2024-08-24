@@ -40,6 +40,7 @@ jobs:
         SWITCHER_API_JWT_SECRET: ${{ secrets.SWITCHER_API_JWT_SECRET }}
         API_DOMAIN_ID: ${{ secrets.API_DOMAIN_ID }}
         GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        GIT_TOKEN_READ_ONLY: ${{ secrets.GIT_TOKEN_READ_ONLY }}
         GIT_REPO_URL: ${{ secrets.GIT_REPO_URL }}
         GIT_BRANCH: ${{ secrets.GIT_BRANCH }}
 

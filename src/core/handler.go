@@ -6,6 +6,7 @@ import (
 
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 type CoreHandler struct {
@@ -81,7 +82,7 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	}
 
 	if snapshotApi.Domain.Version > account.Domain.Version {
-		account = c.applyChangesToRepository(account, snapshotApi.Domain)
+		account = c.applyChangesToRepository(account, snapshotApi)
 	} else if len(diff.Changes) > 0 {
 		account = c.applyChangesToAPI(account, repositoryData)
 	}
@@ -125,13 +126,16 @@ func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *m
 	return account
 }
 
-func (c *CoreHandler) applyChangesToRepository(account model.Account, domain model.Domain) model.Account {
-	// Push changes to repository
-	println("Pushing changes to repository")
+func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot) model.Account {
+	// Remove version from domain
+	snapshotContent := snapshot
+	snapshotContent.Domain.Version = ""
+
+	lastCommit, _ := c.GitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
 
 	// Update domain
-	account.Domain.Version = domain.Version
-	account.Domain.LastCommit = "111"
+	account.Domain.Version = snapshot.Domain.Version
+	account.Domain.LastCommit = lastCommit
 
 	return account
 }
