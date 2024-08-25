@@ -68,14 +68,23 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	diff, snapshotApi, err := c.checkForChanges(account.Domain.ID, account.Environment, repositoryData.Content)
 
 	if err != nil {
-		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes")
+		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes - "+err.Error())
 		return
 	}
 
+	// Apply changes
+	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
-		account = c.applyChangesToRepository(account, snapshotApi)
+		changeSource = "Repository"
+		account, err = c.applyChangesToRepository(account, snapshotApi)
 	} else if len(diff.Changes) > 0 {
+		changeSource = "API"
 		account = c.applyChangesToAPI(account, repositoryData)
+	}
+
+	if err != nil {
+		c.updateDomainStatus(account, model.StatusError, "Failed to apply changes ["+changeSource+"] - "+err.Error())
+		return
 	}
 
 	// Update account status: Synced
@@ -117,18 +126,18 @@ func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *m
 	return account
 }
 
-func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot) model.Account {
+func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot) (model.Account, error) {
 	// Remove version from domain
 	snapshotContent := snapshot
 	snapshotContent.Domain.Version = ""
 
-	lastCommit, _ := c.GitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
+	lastCommit, err := c.GitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
 
 	// Update domain
 	account.Domain.Version = snapshot.Domain.Version
 	account.Domain.LastCommit = lastCommit
 
-	return account
+	return account, err
 }
 
 func isRepositoryOutSync(account model.Account, lastCommit string) bool {
