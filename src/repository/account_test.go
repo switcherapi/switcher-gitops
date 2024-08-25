@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,13 +20,36 @@ func TestCreateAccount(t *testing.T) {
 }
 
 func TestFetchAccount(t *testing.T) {
+	t.Run("Should fetch an account by ID", func(t *testing.T) {
+		// Given
+		account := givenAccount(true)
+		account.Domain.ID = "123-fetch-account-by-id"
+		accountCreated, _ := accountRepository.Create(&account)
+
+		// Test
+		fetchedAccount, err := accountRepository.FetchByAccountId(accountCreated.ID.Hex())
+
+		// // Assert
+		assert.Nil(t, err)
+		assert.NotNil(t, fetchedAccount.ID)
+	})
+
+	t.Run("Should not fetch an account by ID - not found", func(t *testing.T) {
+		// Test
+		_, err := accountRepository.FetchByAccountId("non_existent_id")
+
+		// Assert
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Should fetch an account by domain ID", func(t *testing.T) {
 		// Given
 		account := givenAccount(true)
-		accountRepository.Create(&account)
+		account.Domain.ID = "123-fetch-account-by-domain-id"
+		accountCreated, _ := accountRepository.Create(&account)
 
 		// Test
-		fetchedAccount, err := accountRepository.FetchByDomainId(account.Domain.ID)
+		fetchedAccount, err := accountRepository.FetchByDomainId(accountCreated.Domain.ID)
 
 		// Assert
 		assert.Nil(t, err)
@@ -41,9 +65,15 @@ func TestFetchAccount(t *testing.T) {
 	})
 
 	t.Run("Should fetch all active accounts", func(t *testing.T) {
+		// Drop collection
+		mongoDb.Collection("accounts").Drop(context.Background())
+
 		// Given
 		account1 := givenAccount(true)
+		account1.Domain.ID = "123-fetch-all-active-accounts"
 		account2 := givenAccount(false)
+		account2.Domain.ID = "123-fetch-all-active-accounts-2"
+
 		accountRepository.Create(&account1)
 		accountRepository.Create(&account2)
 
@@ -60,11 +90,12 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Should update an account", func(t *testing.T) {
 		// Given
 		account := givenAccount(true)
-		accountRepository.Create(&account)
+		account.Domain.ID = "123-update-account"
+		accountCreated, _ := accountRepository.Create(&account)
 
 		// Test
-		account.Branch = "new_branch"
-		updatedAccount, err := accountRepository.Update(&account)
+		accountCreated.Branch = "new_branch"
+		updatedAccount, err := accountRepository.Update(accountCreated)
 
 		// Assert
 		assert.Nil(t, err)
@@ -85,19 +116,41 @@ func TestUpdateAccount(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	t.Run("Should delete an account", func(t *testing.T) {
+	t.Run("Should delete an account by account ID", func(t *testing.T) {
 		// Given
 		account := givenAccount(true)
-		accountRepository.Create(&account)
+		account.Domain.ID = "123-delete-account-by-account-id"
+		accountCreated, _ := accountRepository.Create(&account)
 
 		// Test
-		err := accountRepository.DeleteByDomainId(account.Domain.ID)
+		err := accountRepository.DeleteByAccountId(accountCreated.ID.Hex())
 
 		// Assert
 		assert.Nil(t, err)
 	})
 
-	t.Run("Should not delete an account - not found", func(t *testing.T) {
+	t.Run("Should not delete an account by account ID - not found", func(t *testing.T) {
+		// Test
+		err := accountRepository.DeleteByAccountId("non_existent_id")
+
+		// Assert
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Should delete an account by domain ID", func(t *testing.T) {
+		// Given
+		account := givenAccount(true)
+		account.Domain.ID = "123-delete-account-by-domain-id"
+		accountCreated, _ := accountRepository.Create(&account)
+
+		// Test
+		err := accountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+
+		// Assert
+		assert.Nil(t, err)
+	})
+
+	t.Run("Should not delete an account by domain ID - not found", func(t *testing.T) {
 		// Test
 		err := accountRepository.DeleteByDomainId("non_existent_domain_id")
 

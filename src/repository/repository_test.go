@@ -25,6 +25,7 @@ func setup() {
 	os.Setenv("GO_ENV", "test")
 	config.InitEnv()
 	mongoDb = db.InitDb()
+	mongoDb.Drop(context.Background())
 
 	accountRepository = NewAccountRepositoryMongo(mongoDb)
 }

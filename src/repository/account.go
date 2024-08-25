@@ -14,9 +14,11 @@ import (
 
 type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
+	FetchByAccountId(accountId string) (*model.Account, error)
 	FetchByDomainId(domainId string) (*model.Account, error)
 	FetchAllActiveAccounts() ([]model.Account, error)
 	Update(account *model.Account) (*model.Account, error)
+	DeleteByAccountId(accountId string) error
 	DeleteByDomainId(domainId string) error
 }
 
@@ -51,6 +53,21 @@ func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Accou
 
 	account.ID = result.InsertedID.(primitive.ObjectID)
 	return account, nil
+}
+
+func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.Account, error) {
+	collection, ctx, cancel := getDbContext(repo)
+	defer cancel()
+
+	var account model.Account
+	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	filter := bson.M{"_id": objectId}
+	err := collection.FindOne(ctx, filter).Decode(&account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
 }
 
 func (repo *AccountRepositoryMongo) FetchByDomainId(domainId string) (*model.Account, error) {
@@ -101,6 +118,21 @@ func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Accou
 	}
 
 	return account, nil
+}
+
+func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
+	collection, ctx, cancel := getDbContext(repo)
+	defer cancel()
+
+	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	filter := bson.M{"_id": objectId}
+	result, err := collection.DeleteOne(ctx, filter)
+
+	if result.DeletedCount == 0 {
+		return ErrAccountNotFound{DomainId: accountId}
+	}
+
+	return err
 }
 
 func (repo *AccountRepositoryMongo) DeleteByDomainId(domainId string) error {
