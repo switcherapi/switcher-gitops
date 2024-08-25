@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 func TestInitCoreHandlerCoroutine(t *testing.T) {
 	// Given
 	fakeGitService := NewFakeGitService()
-	fakeApiService := NewFakeApiService(false)
+	fakeApiService := NewFakeApiService()
 	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 	account := givenAccount()
@@ -58,7 +59,7 @@ func TestStartAccountHandler(t *testing.T) {
 	t.Run("Should sync successfully when repository is out of sync", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeApiService := NewFakeApiService(false)
+		fakeApiService := NewFakeApiService()
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
@@ -89,7 +90,7 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeGitService := NewFakeGitService()
 		fakeGitService.lastCommit = "111"
 
-		fakeApiService := NewFakeApiService(false)
+		fakeApiService := NewFakeApiService()
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
@@ -118,7 +119,9 @@ func TestStartAccountHandler(t *testing.T) {
 	t.Run("Should not sync when API returns an error", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeApiService := NewFakeApiService(true)
+		fakeApiService := NewFakeApiService()
+		fakeApiService.throwError = true
+
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
@@ -141,6 +144,36 @@ func TestStartAccountHandler(t *testing.T) {
 
 		tearDown()
 	})
+
+	t.Run("Should not sync when git token has no permission to push changes", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.errorPushChanges = "authorization failed"
+		fakeApiService := NewFakeApiService()
+
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(account)
+
+		// Terminate the goroutine
+		account.Settings.Active = false
+		coreHandler.AccountRepository.Update(&account)
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
 }
 
 // Helpers
@@ -153,10 +186,11 @@ func tearDown() {
 // Fakes
 
 type FakeGitService struct {
-	lastCommit string
-	date       string
-	content    string
-	status     string
+	lastCommit       string
+	date             string
+	content          string
+	status           string
+	errorPushChanges string
 }
 
 func NewFakeGitService() *FakeGitService {
@@ -194,6 +228,10 @@ func (f *FakeGitService) GetRepositoryData(environment string) (*model.Repositor
 }
 
 func (f *FakeGitService) PushChanges(environment string, content string) (string, error) {
+	if f.errorPushChanges != "" {
+		return "", errors.New(f.errorPushChanges)
+	}
+
 	return f.lastCommit, nil
 }
 
@@ -202,9 +240,9 @@ type FakeApiService struct {
 	response   string
 }
 
-func NewFakeApiService(throwError bool) *FakeApiService {
+func NewFakeApiService() *FakeApiService {
 	return &FakeApiService{
-		throwError: throwError,
+		throwError: false,
 		response: `{
 			"data": {
 				"domain": {
