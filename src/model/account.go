@@ -7,6 +7,7 @@ const (
 )
 
 const (
+	StatusPending = "Pending"
 	StatusSynced  = "Synced"
 	StatusOutSync = "OutSync"
 	StatusError   = "Error"

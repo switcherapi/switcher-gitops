@@ -31,7 +31,7 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 
 	// Iterate over accounts and start account handlers
 	for _, account := range accounts {
-		go c.StartAccountHandler(account)
+		go c.StartAccountHandler(account.ID.Hex())
 	}
 
 	// Update core handler status
@@ -39,21 +39,33 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 	return c.status, nil
 }
 
-func (c *CoreHandler) StartAccountHandler(account model.Account) {
+func (c *CoreHandler) StartAccountHandler(accountId string) {
 	for {
-		if !account.Settings.Active {
+		// Fetch account
+		account, _ := c.AccountRepository.FetchByAccountId(accountId)
+
+		if account == nil {
+			// Terminate the goroutine (account was deleted)
 			return
 		}
 
-		account, _ := c.AccountRepository.FetchByDomainId(account.Domain.ID)
-		timeWindow, unitWindow := getTimeWindow(account.Settings.Window)
+		// Wait for account to be active
+		if !account.Settings.Active {
+			c.updateDomainStatus(*account, model.StatusPending, "Account was deactivated")
+			time.Sleep(1 * time.Minute)
+			continue
+		}
 
+		// Fetch repository data
 		repositoryData, err := c.GitService.GetRepositoryData(account.Environment)
 
+		// Check if repository is out of sync
 		if err == nil && isRepositoryOutSync(*account, repositoryData.CommitHash) {
 			c.syncUp(*account, repositoryData)
 		}
 
+		// Wait for the next cycle
+		timeWindow, unitWindow := getTimeWindow(account.Settings.Window)
 		time.Sleep(time.Duration(timeWindow) * unitWindow)
 	}
 }
