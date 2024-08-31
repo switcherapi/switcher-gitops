@@ -113,16 +113,16 @@ func (c *CoreHandler) checkForChanges(domainId string, environment string, conte
 
 	// Convert API JSON to model.Snapshot
 	snapshotApi := c.ApiService.NewDataFromJson([]byte(snapshotJsonFromApi))
-	left := snapshotApi.Snapshot
+	fromApi := snapshotApi.Snapshot
 
 	// Convert content to model.Snapshot
 	jsonRight := []byte(content)
-	right := c.ComparatorService.NewSnapshotFromJson(jsonRight)
+	fromRepo := c.ComparatorService.NewSnapshotFromJson(jsonRight)
 
 	// Compare Snapshots and get diff
-	diffNew := c.ComparatorService.CheckSnapshotDiff(left, right, NEW)
-	diffChanged := c.ComparatorService.CheckSnapshotDiff(left, right, CHANGED)
-	diffDeleted := c.ComparatorService.CheckSnapshotDiff(left, right, DELETED)
+	diffNew := c.ComparatorService.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+	diffChanged := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+	diffDeleted := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
 
 	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), snapshotApi.Snapshot, nil
 }

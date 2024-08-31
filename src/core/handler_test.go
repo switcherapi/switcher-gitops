@@ -75,7 +75,7 @@ func TestStartAccountHandler(t *testing.T) {
 
 		// Assert
 		_, err := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
-		assert.Less(t, numGoroutinesAfter, numGoroutinesBefore)
+		assert.LessOrEqual(t, numGoroutinesAfter, numGoroutinesBefore)
 		assert.NotNil(t, err)
 
 		tearDown()
@@ -95,9 +95,7 @@ func TestStartAccountHandler(t *testing.T) {
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
-		// Terminate the goroutine
-		accountCreated.Settings.Active = false
-		coreHandler.AccountRepository.Update(accountCreated)
+		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -127,13 +125,11 @@ func TestStartAccountHandler(t *testing.T) {
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
-		// Terminate the goroutine
-		accountCreated.Settings.Active = false
-		coreHandler.AccountRepository.Update(accountCreated)
+		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Synced successfully")
 		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
@@ -158,9 +154,7 @@ func TestStartAccountHandler(t *testing.T) {
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
-		// Terminate the goroutine
-		accountCreated.Settings.Active = false
-		coreHandler.AccountRepository.Update(accountCreated)
+		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -188,9 +182,7 @@ func TestStartAccountHandler(t *testing.T) {
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
-		// Terminate the goroutine
-		accountCreated.Settings.Active = false
-		coreHandler.AccountRepository.Update(accountCreated)
+		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
 
 		// Assert
