@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -18,14 +19,14 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 	account := givenAccount()
-	coreHandler.AccountRepository.Create(&account)
+	account.Domain.ID = "123-init-core-handler"
+	accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 	// Test
 	status, err := coreHandler.InitCoreHandlerCoroutine()
 
 	// Terminate the goroutine
-	account.Settings.Active = false
-	coreHandler.AccountRepository.Update(&account)
+	coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
 	time.Sleep(1 * time.Second)
 
 	// Assert
@@ -39,19 +40,43 @@ func TestStartAccountHandler(t *testing.T) {
 	t.Run("Should not sync when account is not active", func(t *testing.T) {
 		// Given
 		account := givenAccount()
+		account.Domain.ID = "123-not-active"
 		account.Settings.Active = false
-		coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(account)
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
-		assert.Equal(t, model.StatusOutSync, accountFromDb.Domain.Status)
-		assert.Equal(t, "", accountFromDb.Domain.Message)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Equal(t, model.StatusPending, accountFromDb.Domain.Status)
+		assert.Equal(t, "Account was deactivated", accountFromDb.Domain.Message)
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+
+		tearDown()
+	})
+
+	t.Run("Should not sync after account is deleted", func(t *testing.T) {
+		// Given
+		account := givenAccount()
+		account.Domain.ID = "123-deleted"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		numGoroutinesBefore := runtime.NumGoroutine()
+
+		// Terminate the goroutine
+		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		time.Sleep(1 * time.Second)
+		numGoroutinesAfter := runtime.NumGoroutine()
+
+		// Assert
+		_, err := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Less(t, numGoroutinesAfter, numGoroutinesBefore)
+		assert.NotNil(t, err)
 
 		tearDown()
 	})
@@ -63,19 +88,20 @@ func TestStartAccountHandler(t *testing.T) {
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
+		account.Domain.ID = "123-out-sync"
 		account.Domain.Version = "1"
-		coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(account)
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
 		// Terminate the goroutine
-		account.Settings.Active = false
-		coreHandler.AccountRepository.Update(&account)
+		accountCreated.Settings.Active = false
+		coreHandler.AccountRepository.Update(accountCreated)
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Synced successfully")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -94,19 +120,20 @@ func TestStartAccountHandler(t *testing.T) {
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
+		account.Domain.ID = "123-newer-version"
 		account.Domain.Version = "0"
-		coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(account)
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
 		// Terminate the goroutine
-		account.Settings.Active = false
-		coreHandler.AccountRepository.Update(&account)
+		accountCreated.Settings.Active = false
+		coreHandler.AccountRepository.Update(accountCreated)
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Synced successfully")
 		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
@@ -125,18 +152,19 @@ func TestStartAccountHandler(t *testing.T) {
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
-		coreHandler.AccountRepository.Create(&account)
+		account.Domain.ID = "123-api-error"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(account)
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
 		// Terminate the goroutine
-		account.Settings.Active = false
-		coreHandler.AccountRepository.Update(&account)
+		accountCreated.Settings.Active = false
+		coreHandler.AccountRepository.Update(accountCreated)
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -154,18 +182,19 @@ func TestStartAccountHandler(t *testing.T) {
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
-		coreHandler.AccountRepository.Create(&account)
+		account.Domain.ID = "123-no-permission"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(account)
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
 
 		// Terminate the goroutine
-		account.Settings.Active = false
-		coreHandler.AccountRepository.Update(&account)
+		accountCreated.Settings.Active = false
+		coreHandler.AccountRepository.Update(accountCreated)
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(account.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")
