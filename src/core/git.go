@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
@@ -139,7 +140,7 @@ func (g *GitService) getRepository(fs billy.Filesystem) (*git.Repository, error)
 
 func (g *GitService) getAuth() *http.BasicAuth {
 	return &http.BasicAuth{
-		Username: "git-user",
+		Username: config.GetEnv("GIT_USER"),
 		Password: g.Token,
 	}
 }
