@@ -38,7 +38,6 @@ jobs:
         MONGO_DB: switcher-gitops-test
         SWITCHER_API_URL: ${{ secrets.SWITCHER_API_URL }}
         SWITCHER_API_JWT_SECRET: ${{ secrets.SWITCHER_API_JWT_SECRET }}
-        API_DOMAIN_ID: ${{ secrets.API_DOMAIN_ID }}
         GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
         GIT_USER: ${{ secrets.GIT_USER }}
         GIT_TOKEN_READ_ONLY: ${{ secrets.GIT_TOKEN_READ_ONLY }}
