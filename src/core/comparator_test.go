@@ -8,7 +8,7 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
-const DEFAULT_JSON = "../../resources/fixtures/default.json"
+const DEFAULT_JSON = "../../resources/fixtures/comparator/default.json"
 
 func TestCheckGroupSnapshot(t *testing.T) {
 	c := NewComparatorService()
@@ -16,7 +16,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 	t.Run("Should return changes in group", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_group.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_group.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -46,7 +46,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 	t.Run("Should return new group", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_group.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_group.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -84,7 +84,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 	t.Run("Should return deleted group", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_group.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_group.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -110,7 +110,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 
 	t.Run("Should return new group from empty group", func(t *testing.T) {
 		// Given
-		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty.json")
+		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/comparator/default_empty.json")
 		jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
@@ -128,7 +128,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 
 	t.Run("Should return new group from empty config", func(t *testing.T) {
 		// Given
-		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/default_empty_config.json")
+		jsonLeft := utils.ReadJsonFromFile("../../resources/fixtures/comparator/default_empty_config.json")
 		jsonRight := utils.ReadJsonFromFile(DEFAULT_JSON)
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
@@ -151,7 +151,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 	t.Run("Should return changes in config", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_config.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_config.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -182,7 +182,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 	t.Run("Should return new config", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_config.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_config.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -215,7 +215,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 	t.Run("Should return deleted config", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_config.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_config.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -247,7 +247,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 	t.Run("Should return changes in strategy", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/changed_strategy.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_strategy.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -278,7 +278,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 	t.Run("Should return new strategy", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_strategy.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -313,7 +313,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 	t.Run("Should return deleted strategy", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_strategy.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -342,7 +342,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 	t.Run("Should return new strategy value", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_strategy_value.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_strategy_value.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -373,7 +373,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 	t.Run("Should return deleted strategy value", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_strategy_value.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_strategy_value.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -408,7 +408,7 @@ func TestCheckComponentSnapshot(t *testing.T) {
 	t.Run("Should return new component", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/new_component.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_component.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 
@@ -438,7 +438,7 @@ func TestCheckComponentSnapshot(t *testing.T) {
 	t.Run("Should return deleted component", func(t *testing.T) {
 		// Given
 		jsonLeft := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/deleted_component.json")
+		jsonRight := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_component.json")
 		snapshotLeft := c.NewSnapshotFromJson([]byte(jsonLeft))
 		snapshotRight := c.NewSnapshotFromJson([]byte(jsonRight))
 

@@ -1,8 +1,8 @@
 module github.com/switcherapi/switcher-gitops
 
-go 1.22
+go 1.23
 
-toolchain go1.22.4
+toolchain go1.23.0
 
 require (
 	github.com/go-git/go-billy/v5 v5.5.0

@@ -1,0 +1,35 @@
+{
+    "data": {
+        "domain": {
+            "name": "GitOps",
+            "version": 1718772781488,
+            "group": [
+                {
+                    "name": "Group 1",
+                    "description": "",
+                    "activated": true,
+                    "config": [
+                        {
+                            "key": "FEATURE_1",
+                            "description": "",
+                            "activated": true,
+                            "strategies": [
+                                {
+                                    "strategy": "VALUE_VALIDATION",
+                                    "activated": false,
+                                    "operation": "EXIST",
+                                    "values": [
+                                        "test2"
+                                    ]
+                                }
+                            ],
+                            "components": [
+                                "app1"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
