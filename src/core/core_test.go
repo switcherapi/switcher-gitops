@@ -46,8 +46,7 @@ func canRunIntegratedTests() bool {
 	return config.GetEnv("GIT_REPO_URL") != "" &&
 		config.GetEnv("GIT_TOKEN") != "" &&
 		config.GetEnv("GIT_TOKEN_READ_ONLY") != "" &&
-		config.GetEnv("GIT_BRANCH") != "" &&
-		config.GetEnv("API_DOMAIN_ID") != ""
+		config.GetEnv("GIT_BRANCH") != ""
 }
 
 func AssertNotNil(t *testing.T, object interface{}) {

@@ -27,7 +27,7 @@ func TestFormatJSONError(t *testing.T) {
 }
 
 func TestReadJsonFileToObject(t *testing.T) {
-	json := ReadJsonFromFile("../../resources/fixtures/default.json")
+	json := ReadJsonFromFile("../../resources/fixtures/util/default.json")
 	AssertNotNil(t, json)
 	AssertContains(t, json, "Release 1")
 }

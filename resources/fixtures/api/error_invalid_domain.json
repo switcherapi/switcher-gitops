@@ -1,0 +1,19 @@
+{
+    "errors": [
+        {
+            "message": "Cast to ObjectId failed for value \"INVALID_DOMAIN\" (type string) at path \"_id\" for model \"Domain\"",
+            "locations": [
+                {
+                    "line": 3,
+                    "column": 9
+                }
+            ],
+            "path": [
+                "domain"
+            ]
+        }
+    ],
+    "data": {
+        "domain": null
+    }
+}
