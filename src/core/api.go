@@ -16,8 +16,14 @@ type GraphQLRequest struct {
 	Query string `json:"query"`
 }
 
+type ApplyChangeResponse struct {
+	Message string `json:"message"`
+	Version string `json:"version"`
+}
+
 type IAPIService interface {
 	FetchSnapshot(domainId string, environment string) (string, error)
+	ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error)
 	NewDataFromJson(jsonData []byte) model.Data
 }
 
@@ -48,11 +54,10 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 
 	// Create a new request
 	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
-	req, _ := http.NewRequest("POST", a.ApiUrl, bytes.NewBuffer(reqBody))
+	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
 
 	// Set the request headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
+	setHeaders(req, token)
 
 	// Send the request
 	client := &http.Client{}
@@ -65,6 +70,32 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 	// Read and print the response
 	body, _ := io.ReadAll(resp.Body)
 	return string(body), nil
+}
+
+func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
+	// Generate a bearer token
+	token := generateBearerToken(a.ApiKey, domainId)
+
+	// Create a new request
+	reqBody, _ := json.Marshal(diff)
+	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops/apply", bytes.NewBuffer(reqBody))
+
+	// Set the request headers
+	setHeaders(req, token)
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ApplyChangeResponse{}, err
+	}
+	defer resp.Body.Close()
+
+	// Read and print the response
+	body, _ := io.ReadAll(resp.Body)
+	var response ApplyChangeResponse
+	json.Unmarshal(body, &response)
+	return response, nil
 }
 
 func generateBearerToken(apiKey string, subject string) string {
@@ -83,6 +114,11 @@ func generateBearerToken(apiKey string, subject string) string {
 	signedToken, _ := token.SignedString([]byte(apiKey))
 
 	return signedToken
+}
+
+func setHeaders(req *http.Request, token string) {
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
 }
 
 func createQuery(domainId string, environment string) string {

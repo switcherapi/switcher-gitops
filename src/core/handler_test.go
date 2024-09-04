@@ -297,6 +297,10 @@ func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (str
 	return f.response, nil
 }
 
+func (f *FakeApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
+	return ApplyChangeResponse{}, nil
+}
+
 func (f *FakeApiService) NewDataFromJson(jsonData []byte) model.Data {
 	var data model.Data
 	json.Unmarshal(jsonData, &data)
