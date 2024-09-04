@@ -177,7 +177,7 @@ func deleteBranch(branchName string) {
 
 func getAuth() *http.BasicAuth {
 	return &http.BasicAuth{
-		Username: "git-user",
+		Username: appConfig.GetEnv("GIT_USER"),
 		Password: appConfig.GetEnv("GIT_TOKEN"),
 	}
 }
