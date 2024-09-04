@@ -77,6 +77,34 @@ func TestApplyChangesToAPI(t *testing.T) {
 		assert.Equal(t, "2", response.Version)
 		assert.Equal(t, "Changes applied successfully", response.Message)
 	})
+
+	t.Run("Should return error - invalid API key", func(t *testing.T) {
+		// Given
+		diff := givenDiffResult()
+		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "message": "Invalid API token" }`)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL)
+
+		// Test
+		response, _ := apiService.ApplyChangesToAPI("domainId", "default", diff)
+
+		// Assert
+		assert.NotNil(t, response)
+		assert.Contains(t, response.Message, "Invalid API token")
+	})
+
+	t.Run("Should return error - API not accessible", func(t *testing.T) {
+		// Given
+		diff := givenDiffResult()
+		apiService := NewApiService("[SWITCHER_API_JWT_SECRET]", "http://localhost:8080")
+
+		// Test
+		_, err := apiService.ApplyChangesToAPI("domainId", "default", diff)
+
+		// Assert
+		AssertNotNil(t, err)
+	})
 }
 
 // Helpers
