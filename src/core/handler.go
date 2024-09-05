@@ -74,10 +74,10 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	// Update account status: Out of sync
 	account.Domain.LastCommit = repositoryData.CommitHash
 	account.Domain.LastDate = repositoryData.CommitDate
-	c.updateDomainStatus(account, model.StatusOutSync, "Syncing up...")
+	c.updateDomainStatus(account, model.StatusOutSync, model.MessageSyncingUp)
 
 	// Check for changes
-	diff, snapshotApi, err := c.checkForChanges(account.Domain.ID, account.Environment, repositoryData.Content)
+	diff, snapshotApi, err := c.checkForChanges(account, repositoryData.Content)
 
 	if err != nil {
 		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes - "+err.Error())
@@ -100,12 +100,12 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	}
 
 	// Update account status: Synced
-	c.updateDomainStatus(account, model.StatusSynced, "Synced successfully")
+	c.updateDomainStatus(account, model.StatusSynced, model.MessageSynced)
 }
 
-func (c *CoreHandler) checkForChanges(domainId string, environment string, content string) (model.DiffResult, model.Snapshot, error) {
+func (c *CoreHandler) checkForChanges(account model.Account, content string) (model.DiffResult, model.Snapshot, error) {
 	// Get Snapshot from API
-	snapshotJsonFromApi, err := c.ApiService.FetchSnapshot(domainId, environment)
+	snapshotJsonFromApi, err := c.ApiService.FetchSnapshot(account.Domain.ID, account.Environment)
 
 	if err != nil {
 		return model.DiffResult{}, model.Snapshot{}, err
@@ -122,7 +122,11 @@ func (c *CoreHandler) checkForChanges(domainId string, environment string, conte
 	// Compare Snapshots and get diff
 	diffNew := c.ComparatorService.CheckSnapshotDiff(fromRepo, fromApi, NEW)
 	diffChanged := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
-	diffDeleted := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+
+	var diffDeleted model.DiffResult
+	if account.Settings.ForcePrune {
+		diffDeleted = c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+	}
 
 	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), snapshotApi.Snapshot, nil
 }
