@@ -14,6 +14,11 @@ const (
 )
 
 const (
+	MessageSyncingUp = "Syncing up..."
+	MessageSynced    = "Synced successfully"
+)
+
+const (
 	FilePath = "resources/"
 )
 
