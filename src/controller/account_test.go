@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 const NOT_FOUND = "/not-found"
@@ -28,6 +30,9 @@ func TestCreateAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, response.Code)
 		assert.Nil(t, err)
 		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+
+		token, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		assert.Equal(t, accountV1.Token, token)
 	})
 
 	t.Run("Should not create an account - invalid request", func(t *testing.T) {
@@ -103,7 +108,35 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV2.Repository, accountResponse.Repository)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.NotEmpty(t, accountResponse.Token)
+		assert.NotEqual(t, accountV1.Branch, accountResponse.Branch)
+		assert.NotEqual(t, accountV1.Settings.Window, accountResponse.Settings.Window)
+		assert.NotEqual(t, accountV1.Settings.Active, accountResponse.Settings.Active)
+	})
+
+	t.Run("Should update account token only", func(t *testing.T) {
+		// Create an account
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+		// Test
+		accountRequest := accountV1
+		accountRequest.Token = "new-token"
+
+		payload, _ := json.Marshal(accountRequest)
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
+		response := executeRequest(req)
+
+		// Assert
+		var accountResponse model.Account
+		err := json.NewDecoder(response.Body).Decode(&accountResponse)
+
+		assert.Equal(t, http.StatusOK, response.Code)
+		assert.Nil(t, err)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+
+		encryptedToken := utils.Encrypt(accountV1.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		assert.NotEqual(t, encryptedToken, accountResponse.Token)
 	})
 
 	t.Run("Should not update an account - invalid request", func(t *testing.T) {

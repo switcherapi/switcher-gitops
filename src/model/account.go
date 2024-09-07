@@ -26,6 +26,7 @@ type Account struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	Repository  string             `json:"repository"`
 	Branch      string             `json:"branch"`
+	Token       string             `json:"token"`
 	Environment string             `json:"environment"`
 	Domain      DomainDetails      `json:"domain"`
 	Settings    Settings           `json:"settings"`
