@@ -14,9 +14,8 @@ import (
 
 func TestInitCoreHandlerCoroutine(t *testing.T) {
 	// Given
-	fakeGitService := NewFakeGitService()
 	fakeApiService := NewFakeApiService()
-	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 	account := givenAccount()
 	account.Domain.ID = "123-init-core-handler"
@@ -39,13 +38,15 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 func TestStartAccountHandler(t *testing.T) {
 	t.Run("Should not sync when account is not active", func(t *testing.T) {
 		// Given
+		fakeGitService := NewFakeGitService()
+
 		account := givenAccount()
 		account.Domain.ID = "123-not-active"
 		account.Settings.Active = false
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		time.Sleep(1 * time.Second)
 
@@ -60,12 +61,14 @@ func TestStartAccountHandler(t *testing.T) {
 
 	t.Run("Should not sync after account is deleted", func(t *testing.T) {
 		// Given
+		fakeGitService := NewFakeGitService()
+
 		account := givenAccount()
 		account.Domain.ID = "123-deleted"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 		numGoroutinesBefore := runtime.NumGoroutine()
 
 		// Terminate the goroutine
@@ -85,14 +88,14 @@ func TestStartAccountHandler(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
@@ -117,7 +120,7 @@ func TestStartAccountHandler(t *testing.T) {
 			}
 		}`
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync-prune"
@@ -126,7 +129,7 @@ func TestStartAccountHandler(t *testing.T) {
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
@@ -148,14 +151,14 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeGitService.lastCommit = "111"
 
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-newer-version"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
@@ -177,14 +180,14 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeApiService := NewFakeApiService()
 		fakeApiService.throwError = true
 
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-api-error"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
@@ -205,14 +208,14 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeGitService.errorPushChanges = "authorization failed"
 		fakeApiService := NewFakeApiService()
 
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeGitService, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-no-permission"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex())
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 
 		// Wait for goroutine to process
 		time.Sleep(1 * time.Second)
@@ -286,6 +289,10 @@ func (f *FakeGitService) PushChanges(environment string, content string) (string
 	}
 
 	return f.lastCommit, nil
+}
+
+func (f *FakeGitService) UpdateRepositorySettings(repository string, token string, branch string) {
+	// Do nothing
 }
 
 type FakeApiService struct {
