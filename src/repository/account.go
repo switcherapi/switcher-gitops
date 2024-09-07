@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -26,14 +27,6 @@ type AccountRepository interface {
 
 type AccountRepositoryMongo struct {
 	Db *mongo.Database
-}
-
-type ErrAccountNotFound struct {
-	DomainId string
-}
-
-func (err ErrAccountNotFound) Error() string {
-	return "Account not found for domain.id: " + err.DomainId
 }
 
 const domainIdFilter = "domain.id"
@@ -141,7 +134,7 @@ func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
 	result, err := collection.DeleteOne(ctx, filter)
 
 	if result.DeletedCount == 0 {
-		return ErrAccountNotFound{DomainId: accountId}
+		return errors.New("Account not found for id: " + accountId)
 	}
 
 	return err
@@ -155,7 +148,7 @@ func (repo *AccountRepositoryMongo) DeleteByDomainId(domainId string) error {
 	result, err := collection.DeleteOne(ctx, filter)
 
 	if result.DeletedCount == 0 {
-		return ErrAccountNotFound{DomainId: domainId}
+		return errors.New("Account not found for domain.id: " + domainId)
 	}
 
 	return err

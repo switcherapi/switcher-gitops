@@ -29,10 +29,9 @@ func setup() {
 	mongoDb = db.InitDb()
 
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-	gitService := NewGitService("repoURL", "token", "main")
 	apiService := NewApiService("apiKey", "")
 	comparatorService := NewComparatorService()
-	coreHandler = NewCoreHandler(accountRepository, gitService, apiService, comparatorService)
+	coreHandler = NewCoreHandler(accountRepository, apiService, comparatorService)
 }
 
 func shutdown() {
@@ -65,8 +64,9 @@ func AssertContains(t *testing.T, actual string, expected string) {
 
 func givenAccount() model.Account {
 	return model.Account{
-		Repository:  "switcherapi/switcher-gitops",
+		Repository:  "https://github.com/switcherapi/switcher-gitops-fixture",
 		Branch:      "master",
+		Token:       "token",
 		Environment: "default",
 		Domain: model.DomainDetails{
 			ID:         "123-core-test",

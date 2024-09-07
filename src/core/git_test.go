@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
 	appConfig "github.com/switcherapi/switcher-gitops/src/config"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 const (
@@ -21,16 +22,32 @@ const (
 func TestNewGitService(t *testing.T) {
 	// Given
 	repoURL := "repoURL"
-	token := "token"
+	encryptedToken := "encryptedToken"
 	branchName := "main"
 
 	// Test
-	gitService := NewGitService(repoURL, token, branchName)
+	gitService := NewGitService(repoURL, encryptedToken, branchName)
 
 	// Assert
 	assert.Equal(t, repoURL, gitService.RepoURL)
-	assert.Equal(t, token, gitService.Token)
+	assert.Equal(t, encryptedToken, gitService.EncryptedToken)
 	assert.Equal(t, branchName, gitService.BranchName)
+}
+
+func TestUpdateRepositorySettings(t *testing.T) {
+	// Given
+	repoURL := "repoURL"
+	encryptedToken := "encryptedToken"
+	branchName := "main"
+	gitService := NewGitService(repoURL, encryptedToken, branchName)
+
+	// Test
+	gitService.UpdateRepositorySettings("newRepoURL", "newEncryptedToken", "newBranch")
+
+	// Assert
+	assert.Equal(t, "newRepoURL", gitService.RepoURL)
+	assert.Equal(t, "newEncryptedToken", gitService.EncryptedToken)
+	assert.Equal(t, "newBranch", gitService.BranchName)
 }
 
 func TestGetRepositoryData(t *testing.T) {
@@ -38,58 +55,52 @@ func TestGetRepositoryData(t *testing.T) {
 		t.Skip(SkipMessage)
 	}
 
-	// Given
-	gitService := NewGitService(
-		appConfig.GetEnv("GIT_REPO_URL"),
-		appConfig.GetEnv("GIT_TOKEN"),
-		appConfig.GetEnv("GIT_BRANCH"))
+	t.Run("Should get repository data", func(t *testing.T) {
+		// Given
+		gitService := NewGitService(
+			appConfig.GetEnv("GIT_REPO_URL"),
+			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
+			appConfig.GetEnv("GIT_BRANCH"))
 
-	// Test
-	repositoryData, err := gitService.GetRepositoryData("default")
+		// Test
+		repositoryData, err := gitService.GetRepositoryData("default")
 
-	// Assert
-	assert.Nil(t, err)
-	assert.NotEmpty(t, repositoryData.CommitHash)
-	assert.NotEmpty(t, repositoryData.CommitDate)
-	assert.NotEmpty(t, repositoryData.Content)
-}
+		// Assert
+		assert.Nil(t, err)
+		assert.NotEmpty(t, repositoryData.CommitHash)
+		assert.NotEmpty(t, repositoryData.CommitDate)
+		assert.NotEmpty(t, repositoryData.Content)
+	})
 
-func TestGetRepositoryDataErrorInvalidEnvironment(t *testing.T) {
-	if !canRunIntegratedTests() {
-		t.Skip(SkipMessage)
-	}
+	t.Run("Should not get repository data - invalid environment", func(t *testing.T) {
+		// Given
+		gitService := NewGitService(
+			appConfig.GetEnv("GIT_REPO_URL"),
+			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
+			appConfig.GetEnv("GIT_BRANCH"))
 
-	// Given
-	gitService := NewGitService(
-		appConfig.GetEnv("GIT_REPO_URL"),
-		appConfig.GetEnv("GIT_TOKEN"),
-		appConfig.GetEnv("GIT_BRANCH"))
+		// Test
+		repositoryData, err := gitService.GetRepositoryData("invalid")
 
-	// Test
-	repositoryData, err := gitService.GetRepositoryData("invalid")
+		// Assert
+		assert.NotNil(t, err)
+		assert.Nil(t, repositoryData)
+	})
 
-	// Assert
-	assert.NotNil(t, err)
-	assert.Nil(t, repositoryData)
-}
+	t.Run("Should not get repository data - invalid token", func(t *testing.T) {
+		// Given
+		gitService := NewGitService(
+			appConfig.GetEnv("GIT_REPO_URL"),
+			"invalid",
+			appConfig.GetEnv("GIT_BRANCH"))
 
-func TestGetRepositoryDataErrorInvalidToken(t *testing.T) {
-	if !canRunIntegratedTests() {
-		t.Skip(SkipMessage)
-	}
+		// Test
+		repositoryData, err := gitService.GetRepositoryData("default")
 
-	// Given
-	gitService := NewGitService(
-		appConfig.GetEnv("GIT_REPO_URL"),
-		"invalid",
-		appConfig.GetEnv("GIT_BRANCH"))
-
-	// Test
-	repositoryData, err := gitService.GetRepositoryData("default")
-
-	// Assert
-	assert.NotNil(t, err)
-	assert.Nil(t, repositoryData)
+		// Assert
+		assert.NotNil(t, err)
+		assert.Nil(t, repositoryData)
+	})
 }
 
 func TestPushChanges(t *testing.T) {
@@ -103,7 +114,7 @@ func TestPushChanges(t *testing.T) {
 		createBranch(branchName)
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
-			appConfig.GetEnv("GIT_TOKEN"),
+			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
 			branchName)
 
 		// Test
@@ -125,7 +136,7 @@ func TestPushChanges(t *testing.T) {
 		// Given
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
-			appConfig.GetEnv("GIT_TOKEN_READ_ONLY"),
+			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN_READ_ONLY"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
 			appConfig.GetEnv("GIT_BRANCH"))
 
 		// Test

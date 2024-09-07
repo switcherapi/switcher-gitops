@@ -10,16 +10,14 @@ import (
 
 type CoreHandler struct {
 	AccountRepository repository.AccountRepository
-	GitService        IGitService
 	ApiService        IAPIService
 	ComparatorService IComparatorService
 	status            int
 }
 
-func NewCoreHandler(repo repository.AccountRepository, gitService IGitService, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
+func NewCoreHandler(repo repository.AccountRepository, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
 	return &CoreHandler{
 		AccountRepository: repo,
-		GitService:        gitService,
 		ApiService:        apiService,
 		ComparatorService: comparatorService,
 	}
@@ -31,7 +29,11 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 
 	// Iterate over accounts and start account handlers
 	for _, account := range accounts {
-		go c.StartAccountHandler(account.ID.Hex())
+		go c.StartAccountHandler(account.ID.Hex(), NewGitService(
+			account.Repository,
+			account.Token,
+			account.Branch,
+		))
 	}
 
 	// Update core handler status
@@ -39,7 +41,7 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 	return c.status, nil
 }
 
-func (c *CoreHandler) StartAccountHandler(accountId string) {
+func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitService) {
 	for {
 		// Fetch account
 		account, _ := c.AccountRepository.FetchByAccountId(accountId)
@@ -56,12 +58,15 @@ func (c *CoreHandler) StartAccountHandler(accountId string) {
 			continue
 		}
 
+		// Refresh account repository settings
+		gitService.UpdateRepositorySettings(account.Repository, account.Token, account.Branch)
+
 		// Fetch repository data
-		repositoryData, err := c.GitService.GetRepositoryData(account.Environment)
+		repositoryData, err := gitService.GetRepositoryData(account.Environment)
 
 		// Check if repository is out of sync
 		if err == nil && isRepositoryOutSync(*account, repositoryData.CommitHash) {
-			c.syncUp(*account, repositoryData)
+			c.syncUp(*account, repositoryData, gitService)
 		}
 
 		// Wait for the next cycle
@@ -70,7 +75,7 @@ func (c *CoreHandler) StartAccountHandler(accountId string) {
 	}
 }
 
-func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.RepositoryData) {
+func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.RepositoryData, gitService IGitService) {
 	// Update account status: Out of sync
 	account.Domain.LastCommit = repositoryData.CommitHash
 	account.Domain.LastDate = repositoryData.CommitDate
@@ -88,7 +93,7 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
 		changeSource = "Repository"
-		account, err = c.applyChangesToRepository(account, snapshotApi)
+		account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
 	} else if len(diff.Changes) > 0 {
 		changeSource = "API"
 		account = c.applyChangesToAPI(account, repositoryData)
@@ -142,12 +147,12 @@ func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *m
 	return account
 }
 
-func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot) (model.Account, error) {
+func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot, gitService IGitService) (model.Account, error) {
 	// Remove version from domain
 	snapshotContent := snapshot
 	snapshotContent.Domain.Version = ""
 
-	lastCommit, err := c.GitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
+	lastCommit, err := gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
 
 	// Update domain
 	account.Domain.Version = snapshot.Domain.Version

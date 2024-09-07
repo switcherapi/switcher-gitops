@@ -12,25 +12,33 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 type IGitService interface {
 	GetRepositoryData(environment string) (*model.RepositoryData, error)
 	PushChanges(environment string, content string) (string, error)
+	UpdateRepositorySettings(repository string, encryptedToken string, branch string)
 }
 
 type GitService struct {
-	RepoURL    string
-	Token      string
-	BranchName string
+	RepoURL        string
+	EncryptedToken string
+	BranchName     string
 }
 
-func NewGitService(repoURL string, token string, branchName string) *GitService {
+func NewGitService(repoURL string, encryptedToken string, branchName string) *GitService {
 	return &GitService{
-		RepoURL:    repoURL,
-		Token:      token,
-		BranchName: branchName,
+		RepoURL:        repoURL,
+		EncryptedToken: encryptedToken,
+		BranchName:     branchName,
 	}
+}
+
+func (g *GitService) UpdateRepositorySettings(repository string, encryptedToken string, branch string) {
+	g.RepoURL = repository
+	g.EncryptedToken = encryptedToken
+	g.BranchName = branch
 }
 
 func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
@@ -139,8 +147,14 @@ func (g *GitService) getRepository(fs billy.Filesystem) (*git.Repository, error)
 }
 
 func (g *GitService) getAuth() *http.BasicAuth {
+	decryptedToken, err := utils.Decrypt(g.EncryptedToken, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+
+	if err != nil || decryptedToken == "" {
+		return nil
+	}
+
 	return &http.BasicAuth{
 		Username: config.GetEnv("GIT_USER"),
-		Password: g.Token,
+		Password: decryptedToken,
 	}
 }
