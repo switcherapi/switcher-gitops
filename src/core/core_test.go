@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -46,18 +45,6 @@ func canRunIntegratedTests() bool {
 		config.GetEnv("GIT_TOKEN") != "" &&
 		config.GetEnv("GIT_TOKEN_READ_ONLY") != "" &&
 		config.GetEnv("GIT_BRANCH") != ""
-}
-
-func AssertNotNil(t *testing.T, object interface{}) {
-	if object == nil {
-		t.Errorf("Object is nil")
-	}
-}
-
-func AssertContains(t *testing.T, actual string, expected string) {
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Expected %v to contain %v", actual, expected)
-	}
 }
 
 // Fixtures

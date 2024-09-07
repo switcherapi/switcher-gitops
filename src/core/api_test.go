@@ -67,7 +67,7 @@ func TestFetchSnapshot(t *testing.T) {
 		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080")
 		_, err := apiService.FetchSnapshot("domainId", "default")
 
-		AssertNotNil(t, err)
+		assert.NotNil(t, err)
 	})
 }
 
@@ -117,7 +117,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 		_, err := apiService.ApplyChangesToAPI("domainId", "default", diff)
 
 		// Assert
-		AssertNotNil(t, err)
+		assert.NotNil(t, err)
 	})
 }
 

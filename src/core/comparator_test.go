@@ -26,7 +26,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -56,7 +56,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -94,7 +94,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -121,7 +121,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.Equal(t, "NEW", actual.Changes[0].Action)
 		assert.Equal(t, "GROUP", actual.Changes[0].Diff)
 	})
@@ -139,7 +139,7 @@ func TestCheckGroupSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.Equal(t, "NEW", actual.Changes[0].Action)
 		assert.Equal(t, "CONFIG", actual.Changes[0].Diff)
 	})
@@ -161,7 +161,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -192,7 +192,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -225,7 +225,7 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -257,7 +257,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -288,7 +288,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -323,7 +323,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -352,7 +352,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -383,7 +383,7 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -418,7 +418,7 @@ func TestCheckComponentSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
@@ -448,7 +448,7 @@ func TestCheckComponentSnapshot(t *testing.T) {
 		diffDeleted := c.CheckSnapshotDiff(snapshotLeft, snapshotRight, DELETED)
 		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
 
-		AssertNotNil(t, actual)
+		assert.NotNil(t, actual)
 		assert.JSONEq(t, `{
 		"changes": [
 			{
