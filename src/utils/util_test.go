@@ -5,12 +5,25 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
+
+func TestMain(m *testing.M) {
+	os.Setenv("GO_ENV", "test")
+	config.InitEnv()
+	m.Run()
+}
 
 func TestToJsonFromObject(t *testing.T) {
 	account := givenAccount(true)
 	actual := ToJsonFromObject(account)
+	AssertNotNil(t, actual)
+}
+
+func TestToMapFromObject(t *testing.T) {
+	account := givenAccount(true)
+	actual := ToMapFromObject(account)
 	AssertNotNil(t, actual)
 }
 
@@ -30,6 +43,30 @@ func TestReadJsonFileToObject(t *testing.T) {
 	json := ReadJsonFromFile("../../resources/fixtures/util/default.json")
 	AssertNotNil(t, json)
 	AssertContains(t, json, "Release 1")
+}
+
+func TestEncrypDecrypt(t *testing.T) {
+	privatKey := config.GetEnv("GIT_TOKEN_PRIVATE_KEY")
+	text := "github_pat_XXXXXXXXXXXXXXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+	encrypted := Encrypt(text, privatKey)
+	AssertNotNil(t, encrypted)
+
+	decrypted, err := Decrypt(encrypted, privatKey)
+	AssertNil(t, err)
+	AssertEqual(t, text, decrypted)
+}
+
+func TestEncrypDecryptError(t *testing.T) {
+	privatKey := config.GetEnv("GIT_TOKEN_PRIVATE_KEY")
+	text := "github_pat..."
+
+	encrypted := Encrypt(text, privatKey)
+	AssertNotNil(t, encrypted)
+
+	decrypted, err := Decrypt("invalid", privatKey)
+	AssertNotNil(t, err)
+	AssertEqual(t, "", decrypted)
 }
 
 // Fixtures

@@ -60,6 +60,7 @@ func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 var accountV1 = model.Account{
 	Repository: "switcherapi/switcher-gitops",
 	Branch:     "master",
+	Token:      "github_pat_123",
 	Domain: model.DomainDetails{
 		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
@@ -77,7 +78,7 @@ var accountV1 = model.Account{
 
 var accountV2 = model.Account{
 	Repository: "switcherapi/switcher-gitops",
-	Branch:     "master",
+	Branch:     "main",
 	Domain: model.DomainDetails{
 		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",

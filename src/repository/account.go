@@ -5,7 +5,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -45,6 +47,9 @@ func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
 func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
+
+	// Encrypt token before saving
+	account.Token = utils.Encrypt(account.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 
 	result, err := collection.InsertOne(ctx, account)
 	if err != nil {
@@ -107,17 +112,24 @@ func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Accou
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
+	// Encrypt token before saving
+	if account.Token != "" {
+		account.Token = utils.Encrypt(account.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+	}
+
 	filter := primitive.M{domainIdFilter: account.Domain.ID}
-	update := primitive.M{
-		"$set": account,
+	update := getUpdateFields(account)
+
+	var updatedAccount model.Account
+	err := collection.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().
+		SetReturnDocument(options.After)).
+		Decode(&updatedAccount)
+
+	if err != nil {
+		return nil, err
 	}
 
-	result := collection.FindOneAndUpdate(ctx, filter, update)
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-
-	return account, nil
+	return &updatedAccount, nil
 }
 
 func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
@@ -166,5 +178,22 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func getUpdateFields(account *model.Account) primitive.M {
+	accountMap := utils.ToMapFromObject(account)
+
+	update := primitive.M{
+		"$set": accountMap,
+	}
+
+	deleteEmpty(accountMap, "token")
+	return update
+}
+
+func deleteEmpty(setMap map[string]interface{}, key string) {
+	if setMap[key] == "" {
+		delete(setMap, key)
 	}
 }
