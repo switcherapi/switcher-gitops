@@ -13,26 +13,51 @@ import (
 )
 
 func TestInitCoreHandlerCoroutine(t *testing.T) {
-	// Given
-	fakeApiService := NewFakeApiService()
-	coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+	t.Run("Should start account handlers for all active accounts", func(t *testing.T) {
+		// Given
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
-	account := givenAccount()
-	account.Domain.ID = "123-init-core-handler"
-	accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		account := givenAccount()
+		account.Domain.ID = "123-init-core-handler"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
-	// Test
-	status, err := coreHandler.InitCoreHandlerCoroutine()
+		// Test
+		status, err := coreHandler.InitCoreHandlerCoroutine()
 
-	// Terminate the goroutine
-	coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
-	time.Sleep(1 * time.Second)
+		// Terminate the goroutine
+		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		time.Sleep(1 * time.Second)
 
-	// Assert
-	assert.Nil(t, err)
-	assert.Equal(t, 1, status)
+		// Assert
+		assert.Nil(t, err)
+		assert.Equal(t, CoreHandlerStatusRunning, status)
 
-	tearDown()
+		tearDown()
+	})
+
+	t.Run("Should not start account handlers when core handler is already running", func(t *testing.T) {
+		// Given
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-not-init-core-handler"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		coreHandler.InitCoreHandlerCoroutine()
+		status, _ := coreHandler.InitCoreHandlerCoroutine()
+
+		// Terminate the goroutine
+		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		assert.Equal(t, CoreHandlerStatusRunning, status)
+
+		tearDown()
+	})
 }
 
 func TestStartAccountHandler(t *testing.T) {

@@ -8,6 +8,11 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
+const (
+	CoreHandlerStatusInit    = 0
+	CoreHandlerStatusRunning = 1
+)
+
 type CoreHandler struct {
 	AccountRepository repository.AccountRepository
 	ApiService        IAPIService
@@ -24,6 +29,14 @@ func NewCoreHandler(repo repository.AccountRepository, apiService IAPIService, c
 }
 
 func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
+	// Check if core handler is already running
+	if c.status == CoreHandlerStatusRunning {
+		return c.status, nil
+	}
+
+	// Update core handler status
+	c.status = CoreHandlerStatusInit
+
 	// Load all accounts
 	accounts, _ := c.AccountRepository.FetchAllActiveAccounts()
 
@@ -37,13 +50,13 @@ func (c *CoreHandler) InitCoreHandlerCoroutine() (int, error) {
 	}
 
 	// Update core handler status
-	c.status = 1
+	c.status = CoreHandlerStatusRunning
 	return c.status, nil
 }
 
 func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitService) {
 	for {
-		// Fetch account
+		// Refresh account settings
 		account, _ := c.AccountRepository.FetchByAccountId(accountId)
 
 		if account == nil {
