@@ -15,6 +15,10 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+func TestLog(t *testing.T) {
+	Log(LogLevelInfo, "Test log")
+}
+
 func TestToJsonFromObject(t *testing.T) {
 	account := givenAccount(true)
 	actual := ToJsonFromObject(account)
@@ -78,7 +82,7 @@ func givenAccount(active bool) model.Account {
 		Domain: model.DomainDetails{
 			ID:         "123-util-test",
 			Name:       "Switcher GitOps",
-			Version:    "123",
+			Version:    123,
 			LastCommit: "123",
 			Status:     model.StatusSynced,
 			Message:    "Synced successfully",

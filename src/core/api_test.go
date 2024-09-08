@@ -76,7 +76,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 		// Given
 		diff := givenDiffResult()
 		fakeApiServer := givenApiResponse(http.StatusOK, `{ 
-			"version": "2", 
+			"version": 2, 
 			"message": "Changes applied successfully" 
 		}`)
 		defer fakeApiServer.Close()
@@ -88,7 +88,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, response)
-		assert.Equal(t, "2", response.Version)
+		assert.Equal(t, 2, response.Version)
 		assert.Equal(t, "Changes applied successfully", response.Message)
 	})
 

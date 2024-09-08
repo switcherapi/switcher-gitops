@@ -2,10 +2,10 @@ package db
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -24,9 +24,9 @@ func InitDb() *mongo.Database {
 
 	err = client.Ping(context.Background(), nil)
 	if err != nil {
-		log.Fatal(err)
+		utils.Log(utils.LogLevelError, "Error connecting to MongoDB: %s", err.Error())
 	}
 
-	log.Println("Connected to MongoDB!")
+	utils.Log(utils.LogLevelInfo, "Connected to MongoDB!")
 	return client.Database(config.GetEnv("MONGO_DB"))
 }

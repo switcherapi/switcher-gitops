@@ -45,7 +45,7 @@ func givenAccount(active bool) model.Account {
 		Domain: model.DomainDetails{
 			ID:         "123-repository-test",
 			Name:       "Switcher GitOps",
-			Version:    "123",
+			Version:    123,
 			LastCommit: "123",
 			Status:     model.StatusSynced,
 			Message:    "Synced successfully",

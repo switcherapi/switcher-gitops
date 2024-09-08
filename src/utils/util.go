@@ -7,8 +7,26 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"os"
+
+	"github.com/switcherapi/switcher-gitops/src/config"
 )
+
+const (
+	LogLevelInfo  = "INFO"
+	LogLevelError = "ERROR"
+	LogLevelDebug = "DEBUG"
+)
+
+func Log(logLevel string, message string, args ...interface{}) {
+	currentLogLevel := config.GetEnv("LOG_LEVEL")
+
+	if currentLogLevel == "DEBUG" || currentLogLevel == "ERROR" || currentLogLevel == logLevel {
+		log.Printf("[%s] %s\n", logLevel, fmt.Sprintf(message, args...))
+	}
+}
 
 func FormatJSON(jsonString string) string {
 	var prettyJSON bytes.Buffer

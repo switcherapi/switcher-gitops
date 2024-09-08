@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/core"
 	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/repository"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 type App struct {
@@ -42,11 +42,12 @@ func (app *App) Start() error {
 
 	go func() {
 		if err := app.httpServer.ListenAndServe(); err != nil {
-			log.Fatalf("Failed to listen and serve: %+v", err)
+			utils.Log(utils.LogLevelError, "Failed to listen and serve: %s", err.Error())
+			os.Exit(1)
 		}
 	}()
 
-	log.Println("Server started on port " + port)
+	utils.Log(utils.LogLevelInfo, "Server started on port %s", port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Interrupt)
@@ -62,7 +63,7 @@ func (app *App) Start() error {
 func initRoutes(db *mongo.Database, coreHandler *core.CoreHandler) *mux.Router {
 	accountRepository := repository.NewAccountRepositoryMongo(db)
 
-	apiController := controller.NewApiController()
+	apiController := controller.NewApiController(coreHandler)
 	accountController := controller.NewAccountController(accountRepository, coreHandler)
 
 	r := mux.NewRouter()

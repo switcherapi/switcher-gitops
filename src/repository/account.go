@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -170,7 +169,7 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 
 	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
-		log.Fatal(err)
+		utils.Log(utils.LogLevelError, "Error creating index for domain.id: %s", err.Error())
 	}
 }
 

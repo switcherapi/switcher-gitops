@@ -2,7 +2,7 @@ package model
 
 type Domain struct {
 	Group   []Group `json:"group,omitempty"`
-	Version string  `json:"version,omitempty"`
+	Version int     `json:"version,omitempty"`
 }
 
 type Group struct {

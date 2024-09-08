@@ -37,7 +37,7 @@ func setup() {
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
 	coreHandler := core.NewCoreHandler(accountRepository, nil, nil)
 
-	apiController = NewApiController()
+	apiController = NewApiController(coreHandler)
 	accountController = NewAccountController(accountRepository, coreHandler)
 
 	r = mux.NewRouter()
@@ -66,7 +66,7 @@ var accountV1 = model.Account{
 	Domain: model.DomainDetails{
 		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
-		Version:    "123",
+		Version:    123,
 		LastCommit: "123",
 		Status:     model.StatusSynced,
 		Message:    "Synced successfully",
@@ -84,7 +84,7 @@ var accountV2 = model.Account{
 	Domain: model.DomainDetails{
 		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
-		Version:    "123",
+		Version:    123,
 		LastCommit: "123",
 		Status:     model.StatusSynced,
 	},

@@ -18,7 +18,7 @@ type GraphQLRequest struct {
 
 type ApplyChangeResponse struct {
 	Message string `json:"message"`
-	Version string `json:"version"`
+	Version int    `json:"version"`
 }
 
 type IAPIService interface {

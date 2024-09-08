@@ -130,7 +130,7 @@ func TestStartAccountHandler(t *testing.T) {
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, "1", accountFromDb.Domain.Version)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
@@ -149,7 +149,7 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync-prune"
-		account.Domain.Version = "1"
+		account.Domain.Version = 1
 		account.Settings.ForcePrune = true
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
@@ -164,7 +164,7 @@ func TestStartAccountHandler(t *testing.T) {
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, "2", accountFromDb.Domain.Version)
+		assert.Equal(t, 2, accountFromDb.Domain.Version)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
@@ -193,7 +193,7 @@ func TestStartAccountHandler(t *testing.T) {
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, "1", accountFromDb.Domain.Version)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
@@ -332,7 +332,7 @@ func NewFakeApiService() *FakeApiService {
 			"data": {
 				"domain": {
 					"name": "Switcher GitOps",
-					"version": "1",
+					"version": 1,
 					"group": [{
 						"name": "Release 1",
 						"description": "Showcase configuration",

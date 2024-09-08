@@ -12,5 +12,5 @@ func TestCheckApiHandler(t *testing.T) {
 	response := executeRequest(req)
 
 	assert.Equal(t, http.StatusOK, response.Code)
-	assert.Equal(t, "{\"message\":\"API is working\"}", response.Body.String())
+	assert.Contains(t, response.Body.String(), "All good")
 }

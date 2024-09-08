@@ -35,7 +35,7 @@ type Account struct {
 type DomainDetails struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
-	Version    string `json:"version"`
+	Version    int    `json:"version"`
 	LastCommit string `json:"lastcommit"`
 	LastDate   string `json:"lastdate"`
 	Status     string `json:"status"`

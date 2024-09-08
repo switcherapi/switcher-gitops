@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -51,14 +50,14 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 
 	accountCreated, err := controller.AccountRepository.Create(&accountRequest)
 	if err != nil {
-		log.Println(err)
+		utils.Log(utils.LogLevelError, "Error creating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error creating account"}, http.StatusInternalServerError)
 		return
 	}
 
 	// Initialize account handler
-	// gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
-	// controller.CoreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
+	gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
+	go controller.CoreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
 
 	utils.ResponseJSON(w, accountCreated, http.StatusCreated)
 }
@@ -67,7 +66,7 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 	domainId := r.URL.Path[len(controller.RouteAccountPath+"/"):]
 	account, err := controller.AccountRepository.FetchByDomainId(domainId)
 	if err != nil {
-		log.Println(err)
+		utils.Log(utils.LogLevelError, "Error fetching account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Account not found"}, http.StatusNotFound)
 		return
 	}
@@ -79,14 +78,14 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
-		log.Println(err)
+		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
 		return
 	}
 
 	accountUpdated, err := controller.AccountRepository.Update(&accountRequest)
 	if err != nil {
-		log.Println(err)
+		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error updating account"}, http.StatusInternalServerError)
 		return
 	}
@@ -98,7 +97,7 @@ func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter,
 	domainId := r.URL.Path[len(controller.RouteAccountPath+"/"):]
 	err := controller.AccountRepository.DeleteByDomainId(domainId)
 	if err != nil {
-		log.Println(err)
+		utils.Log(utils.LogLevelError, "Error deleting account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error deleting account: " + err.Error()}, http.StatusInternalServerError)
 		return
 	}
