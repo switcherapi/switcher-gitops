@@ -84,6 +84,29 @@ func TestStartAccountHandler(t *testing.T) {
 		tearDown()
 	})
 
+	t.Run("Should not sync when fetch repository data returns an error", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.errorGetRepoData = "something went wrong"
+
+		account := givenAccount()
+		account.Domain.ID = "123-error-get-repo-data"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch repository data")
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+
+		tearDown()
+	})
+
 	t.Run("Should not sync after account is deleted", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -272,6 +295,7 @@ type FakeGitService struct {
 	content          string
 	status           string
 	errorPushChanges string
+	errorGetRepoData string
 }
 
 func NewFakeGitService() *FakeGitService {
@@ -301,6 +325,10 @@ func NewFakeGitService() *FakeGitService {
 }
 
 func (f *FakeGitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
+	if f.errorGetRepoData != "" {
+		return nil, errors.New(f.errorGetRepoData)
+	}
+
 	return &model.RepositoryData{
 		CommitHash: f.lastCommit,
 		CommitDate: f.date,
