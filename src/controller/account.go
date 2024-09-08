@@ -6,12 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/switcherapi/switcher-gitops/src/core"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 type AccountController struct {
+	CoreHandler       *core.CoreHandler
 	AccountRepository repository.AccountRepository
 	RouteAccountPath  string
 }
@@ -20,8 +22,9 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewAccountController(repo repository.AccountRepository) *AccountController {
+func NewAccountController(repo repository.AccountRepository, coreHandler *core.CoreHandler) *AccountController {
 	return &AccountController{
+		CoreHandler:       coreHandler,
 		AccountRepository: repo,
 		RouteAccountPath:  "/account",
 	}
@@ -52,6 +55,10 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error creating account"}, http.StatusInternalServerError)
 		return
 	}
+
+	// Initialize account handler
+	// gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
+	// controller.CoreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
 
 	utils.ResponseJSON(w, accountCreated, http.StatusCreated)
 }

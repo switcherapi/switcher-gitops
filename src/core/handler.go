@@ -20,9 +20,9 @@ type CoreHandler struct {
 	status            int
 }
 
-func NewCoreHandler(repo repository.AccountRepository, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
+func NewCoreHandler(accountRepository repository.AccountRepository, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
 	return &CoreHandler{
-		AccountRepository: repo,
+		AccountRepository: accountRepository,
 		ApiService:        apiService,
 		ComparatorService: comparatorService,
 	}

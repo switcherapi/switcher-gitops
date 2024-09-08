@@ -13,6 +13,7 @@ import (
 
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/controller"
+	"github.com/switcherapi/switcher-gitops/src/core"
 	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/repository"
 )
@@ -24,7 +25,8 @@ type App struct {
 
 func NewApp() *App {
 	db := db.InitDb()
-	routes := initRoutes(db)
+	coreHandler := initCoreHandler(db)
+	routes := initRoutes(db, coreHandler)
 
 	return &App{
 		routerHandlers: routes,
@@ -57,15 +59,29 @@ func (app *App) Start() error {
 	return app.httpServer.Shutdown(ctx)
 }
 
-func initRoutes(db *mongo.Database) *mux.Router {
+func initRoutes(db *mongo.Database, coreHandler *core.CoreHandler) *mux.Router {
 	accountRepository := repository.NewAccountRepositoryMongo(db)
 
 	apiController := controller.NewApiController()
-	accountController := controller.NewAccountController(accountRepository)
+	accountController := controller.NewAccountController(accountRepository, coreHandler)
 
 	r := mux.NewRouter()
 	apiController.RegisterRoutes(r)
 	accountController.RegisterRoutes(r)
 
 	return r
+}
+
+func initCoreHandler(db *mongo.Database) *core.CoreHandler {
+	accountRepository := repository.NewAccountRepositoryMongo(db)
+	comparatorService := core.NewComparatorService()
+	apiService := core.NewApiService(
+		config.GetEnv("SWITCHER_API_JWT_SECRET"),
+		config.GetEnv("SWITCHER_API_URL"),
+	)
+
+	coreHandler := core.NewCoreHandler(accountRepository, apiService, comparatorService)
+	coreHandler.InitCoreHandlerCoroutine()
+
+	return coreHandler
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/switcherapi/switcher-gitops/src/config"
+	"github.com/switcherapi/switcher-gitops/src/core"
 	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
@@ -32,11 +33,12 @@ func setup() {
 	config.InitEnv()
 	mongoDb = db.InitDb()
 
-	// Init Routes
+	// Init modules
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
+	coreHandler := core.NewCoreHandler(accountRepository, nil, nil)
 
 	apiController = NewApiController()
-	accountController = NewAccountController(accountRepository)
+	accountController = NewAccountController(accountRepository, coreHandler)
 
 	r = mux.NewRouter()
 	apiController.RegisterRoutes(r)
