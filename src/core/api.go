@@ -47,37 +47,43 @@ func (c *ApiService) NewDataFromJson(jsonData []byte) model.Data {
 }
 
 func (a *ApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
-	// Generate a bearer token
-	token := generateBearerToken(a.ApiKey, domainId)
-
-	// Define the GraphQL query
 	query := createQuerySnapshotVersion(domainId)
+	responseBody, err := a.doGraphQLRequest(domainId, query)
 
-	// Create a new request
-	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
-	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
-
-	// Set the request headers
-	setHeaders(req, token)
-
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	return string(body), nil
+	return responseBody, nil
 }
 
 func (a *ApiService) FetchSnapshot(domainId string, environment string) (string, error) {
+	query := createQuery(domainId, environment)
+	responseBody, err := a.doGraphQLRequest(domainId, query)
+
+	if err != nil {
+		return "", err
+	}
+
+	return responseBody, nil
+}
+
+func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
+	reqBody, _ := json.Marshal(diff)
+	responseBody, err := a.doPostRequest(a.ApiUrl+"/gitops/apply", domainId, reqBody)
+
+	if err != nil {
+		return ApplyChangeResponse{}, err
+	}
+
+	var response ApplyChangeResponse
+	json.Unmarshal([]byte(responseBody), &response)
+	return response, nil
+}
+
+func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, error) {
 	// Generate a bearer token
 	token := generateBearerToken(a.ApiKey, domainId)
-
-	// Define the GraphQL query
-	query := createQuery(domainId, environment)
 
 	// Create a new request
 	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
@@ -94,17 +100,16 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	return string(body), nil
+	responseBody, _ := io.ReadAll(resp.Body)
+	return string(responseBody), nil
 }
 
-func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
+func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (string, error) {
 	// Generate a bearer token
 	token := generateBearerToken(a.ApiKey, domainId)
 
 	// Create a new request
-	reqBody, _ := json.Marshal(diff)
-	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops/apply", bytes.NewBuffer(reqBody))
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
 
 	// Set the request headers
 	setHeaders(req, token)
@@ -113,14 +118,12 @@ func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return ApplyChangeResponse{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	var response ApplyChangeResponse
-	json.Unmarshal(body, &response)
-	return response, nil
+	responseBody, _ := io.ReadAll(resp.Body)
+	return string(responseBody), nil
 }
 
 func generateBearerToken(apiKey string, subject string) string {
