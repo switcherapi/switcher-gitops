@@ -23,7 +23,8 @@ const (
 func Log(logLevel string, message string, args ...interface{}) {
 	currentLogLevel := config.GetEnv("LOG_LEVEL")
 
-	if logLevel == LogLevelDebug || logLevel == LogLevelError || currentLogLevel == logLevel {
+	if currentLogLevel == LogLevelDebug || currentLogLevel == LogLevelError ||
+		currentLogLevel == logLevel || LogLevelError == logLevel {
 		log.Printf("[%s] %s\n", logLevel, fmt.Sprintf(message, args...))
 	}
 }

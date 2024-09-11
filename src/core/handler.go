@@ -89,11 +89,18 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 			continue
 		}
 
-		// Print account domain version
-		utils.Log(utils.LogLevelDebug, "[%s] Repository data: %s", accountId, utils.FormatJSON(repositoryData.Content))
+		// Fetch snapshot version from API
+		snapshotVersionPayload, err := c.ApiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
+
+		if err != nil {
+			utils.Log(utils.LogLevelError, "[%s] Failed to fetch snapshot version - %s", accountId, err.Error())
+			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error())
+			time.Sleep(1 * time.Minute)
+			continue
+		}
 
 		// Check if repository is out of sync
-		if isRepositoryOutSync(*account, repositoryData.CommitHash) {
+		if c.isRepositoryOutSync(*account, repositoryData.CommitHash, snapshotVersionPayload) {
 			c.syncUp(*account, repositoryData, gitService)
 		}
 
@@ -126,7 +133,13 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
 		changeSource = "Repository"
-		account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
+		if len(diff.Changes) > 0 {
+			account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
+		} else {
+			utils.Log(utils.LogLevelInfo, "[%s] Repository is up to date", account.ID.Hex())
+			account.Domain.Version = snapshotApi.Domain.Version
+			account.Domain.LastCommit = repositoryData.CommitHash
+		}
 	} else if len(diff.Changes) > 0 {
 		changeSource = "API"
 		account = c.applyChangesToAPI(account, repositoryData)
@@ -198,16 +211,15 @@ func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot m
 	return account, err
 }
 
-func isRepositoryOutSync(account model.Account, lastCommit string) bool {
-	utils.Log(utils.LogLevelDebug, "[%s] Checking account - Last commit: %s - Domain Version: %d",
-		account.ID.Hex(), account.Domain.LastCommit, account.Domain.Version)
+func (c *CoreHandler) isRepositoryOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
+	snapshotVersion := c.ApiService.NewDataFromJson([]byte(snapshotVersionPayload)).Snapshot.Domain.Version
 
-	return account.Domain.LastCommit == "" || account.Domain.LastCommit != lastCommit
-}
+	utils.Log(utils.LogLevelDebug, "[%s] Checking account - Last commit: %s - Domain Version: %d - Snapshot Version: %d",
+		account.ID.Hex(), account.Domain.LastCommit, account.Domain.Version, snapshotVersion)
 
-func getTimeWindow(window string) (int, time.Duration) {
-	duration, _ := time.ParseDuration(window)
-	return 1, duration
+	return account.Domain.LastCommit == "" || // First sync
+		account.Domain.LastCommit != lastCommit || // Repository out of sync
+		account.Domain.Version != snapshotVersion // API out of sync
 }
 
 func (c *CoreHandler) updateDomainStatus(account model.Account, status string, message string) {
@@ -216,4 +228,9 @@ func (c *CoreHandler) updateDomainStatus(account model.Account, status string, m
 	account.Domain.Message = message
 	account.Domain.LastDate = time.Now().Format(time.ANSIC)
 	c.AccountRepository.Update(&account)
+}
+
+func getTimeWindow(window string) (int, time.Duration) {
+	duration, _ := time.ParseDuration(window)
+	return 1, duration
 }

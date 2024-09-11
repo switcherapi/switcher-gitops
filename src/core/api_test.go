@@ -13,6 +13,48 @@ import (
 
 const SWITCHER_API_JWT_SECRET = "SWITCHER_API_JWT_SECRET"
 
+func TestFetchSnapshotVersion(t *testing.T) {
+	t.Run("Should return snapshot version", func(t *testing.T) {
+		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot_version.json")
+		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		version, _ := apiService.FetchSnapshotVersion("domainId", "default")
+
+		assert.Contains(t, version, "version", "Missing version in response")
+		assert.Contains(t, version, "domain", "Missing domain in response")
+	})
+
+	t.Run("Should return error - invalid API key", func(t *testing.T) {
+		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "error": "Invalid API token" }`)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService("INVALID_KEY", fakeApiServer.URL)
+		version, _ := apiService.FetchSnapshotVersion("domainId", "default")
+
+		assert.Contains(t, version, "Invalid API token")
+	})
+
+	t.Run("Should return error - invalid domain", func(t *testing.T) {
+		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/error_invalid_domain.json")
+		fakeApiServer := givenApiResponse(http.StatusUnauthorized, responsePayload)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		version, _ := apiService.FetchSnapshotVersion("INVALID_DOMAIN", "default")
+
+		assert.Contains(t, version, "errors")
+	})
+
+	t.Run("Should return error - invalid API URL", func(t *testing.T) {
+		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080")
+		_, err := apiService.FetchSnapshotVersion("domainId", "default")
+
+		assert.NotNil(t, err)
+	})
+}
+
 func TestFetchSnapshot(t *testing.T) {
 	t.Run("Should return snapshot", func(t *testing.T) {
 		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot.json")

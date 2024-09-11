@@ -107,6 +107,32 @@ func TestStartAccountHandler(t *testing.T) {
 		tearDown()
 	})
 
+	t.Run("Should not sync when fetch snapshot version returns an error", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		fakeApiService.throwErrorVersion = true
+
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-error-fetch-snapshot-version"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch snapshot version")
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+
+		tearDown()
+	})
+
 	t.Run("Should not sync after account is deleted", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -140,6 +166,51 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync"
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync successfully when repository is up to date but not synced", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": [{
+					"name": "Release 1",
+					"description": "Showcase configuration",
+					"activated": true,
+					"config": [{
+						"key": "MY_SWITCHER",
+						"description": "",
+						"activated": true,
+						"strategies": [],
+						"components": [
+							"switcher-playground"
+						]
+					}]
+				}]
+			}
+		}`
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-up-to-date-not-synced"
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
@@ -226,7 +297,7 @@ func TestStartAccountHandler(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
 		fakeApiService := NewFakeApiService()
-		fakeApiService.throwError = true
+		fakeApiService.throwErrorSnapshot = true
 
 		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
 
@@ -349,14 +420,24 @@ func (f *FakeGitService) UpdateRepositorySettings(repository string, token strin
 }
 
 type FakeApiService struct {
-	throwError bool
-	response   string
+	throwErrorVersion  bool
+	throwErrorSnapshot bool
+	responseVersion    string
+	responseSnapshot   string
 }
 
 func NewFakeApiService() *FakeApiService {
 	return &FakeApiService{
-		throwError: false,
-		response: `{
+		throwErrorVersion:  false,
+		throwErrorSnapshot: false,
+		responseVersion: `{
+			"data": {
+				"domain": {
+					"version": 1
+				}
+			}
+		}`,
+		responseSnapshot: `{
 			"data": {
 				"domain": {
 					"name": "Switcher GitOps",
@@ -381,12 +462,20 @@ func NewFakeApiService() *FakeApiService {
 	}
 }
 
-func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (string, error) {
-	if f.throwError {
-		return "", assert.AnError
+func (f *FakeApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
+	if f.throwErrorVersion {
+		return "", errors.New("Something went wrong")
 	}
 
-	return f.response, nil
+	return f.responseVersion, nil
+}
+
+func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (string, error) {
+	if f.throwErrorSnapshot {
+		return "", errors.New("Something went wrong")
+	}
+
+	return f.responseSnapshot, nil
 }
 
 func (f *FakeApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {

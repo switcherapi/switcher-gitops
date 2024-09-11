@@ -22,6 +22,7 @@ type ApplyChangeResponse struct {
 }
 
 type IAPIService interface {
+	FetchSnapshotVersion(domainId string, environment string) (string, error)
 	FetchSnapshot(domainId string, environment string) (string, error)
 	ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error)
 	NewDataFromJson(jsonData []byte) model.Data
@@ -43,6 +44,32 @@ func (c *ApiService) NewDataFromJson(jsonData []byte) model.Data {
 	var data model.Data
 	json.Unmarshal(jsonData, &data)
 	return data
+}
+
+func (a *ApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
+	// Generate a bearer token
+	token := generateBearerToken(a.ApiKey, domainId)
+
+	// Define the GraphQL query
+	query := createQuerySnapshotVersion(domainId)
+
+	// Create a new request
+	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
+	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
+
+	// Set the request headers
+	setHeaders(req, token)
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	return string(body), nil
 }
 
 func (a *ApiService) FetchSnapshot(domainId string, environment string) (string, error) {
@@ -67,7 +94,6 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 	}
 	defer resp.Body.Close()
 
-	// Read and print the response
 	body, _ := io.ReadAll(resp.Body)
 	return string(body), nil
 }
@@ -91,7 +117,6 @@ func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff
 	}
 	defer resp.Body.Close()
 
-	// Read and print the response
 	body, _ := io.ReadAll(resp.Body)
 	var response ApplyChangeResponse
 	json.Unmarshal(body, &response)
@@ -119,6 +144,15 @@ func generateBearerToken(apiKey string, subject string) string {
 func setHeaders(req *http.Request, token string) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
+}
+
+func createQuerySnapshotVersion(domainId string) string {
+	return fmt.Sprintf(`
+    {
+        domain(_id: "%s") {
+            version
+        }
+    }`, domainId)
 }
 
 func createQuery(domainId string, environment string) string {
