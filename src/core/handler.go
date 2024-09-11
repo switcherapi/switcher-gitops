@@ -133,7 +133,7 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
 		changeSource = "Repository"
-		if account.Domain.Version == 0 || len(diff.Changes) > 0 {
+		if len(diff.Changes) > 0 {
 			account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
 		} else {
 			utils.Log(utils.LogLevelInfo, "[%s - %s] Repository is up to date", account.ID.Hex(), account.Domain.Name)
