@@ -211,6 +211,7 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-up-to-date-not-synced"
+		account.Domain.Version = -1 // Different from the API version
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
@@ -245,6 +246,40 @@ func TestStartAccountHandler(t *testing.T) {
 		account.Domain.ID = "123-out-sync-prune"
 		account.Domain.Version = 1
 		account.Settings.ForcePrune = true
+		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 2, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync and not prune when repository is out of sync", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": []
+			}
+		}`
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-out-sync-not-prune"
+		account.Domain.Version = 1
+		account.Settings.ForcePrune = false
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
@@ -315,7 +350,7 @@ func TestStartAccountHandler(t *testing.T) {
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
-		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()

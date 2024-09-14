@@ -70,7 +70,7 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 
 		// Wait for account to be active
 		if !account.Settings.Active {
-			utils.Log(utils.LogLevelInfo, "[%s] Account is not active, waiting for activation", accountId)
+			utils.Log(utils.LogLevelInfo, "[%s - %s] Account is not active, waiting for activation", accountId, account.Domain.Name)
 			c.updateDomainStatus(*account, model.StatusPending, "Account was deactivated")
 			time.Sleep(1 * time.Minute)
 			continue
@@ -83,7 +83,7 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		repositoryData, err := gitService.GetRepositoryData(account.Environment)
 
 		if err != nil {
-			utils.Log(utils.LogLevelError, "[%s] Failed to fetch repository data - %s", accountId, err.Error())
+			utils.Log(utils.LogLevelError, "[%s - %s] Failed to fetch repository data - %s", accountId, account.Domain.Name, err.Error())
 			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error())
 			time.Sleep(1 * time.Minute)
 			continue
@@ -93,14 +93,14 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		snapshotVersionPayload, err := c.ApiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
 
 		if err != nil {
-			utils.Log(utils.LogLevelError, "[%s] Failed to fetch snapshot version - %s", accountId, err.Error())
+			utils.Log(utils.LogLevelError, "[%s - %s] Failed to fetch snapshot version - %s", accountId, account.Domain.Name, err.Error())
 			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error())
 			time.Sleep(1 * time.Minute)
 			continue
 		}
 
 		// Check if repository is out of sync
-		if c.isRepositoryOutSync(*account, repositoryData.CommitHash, snapshotVersionPayload) {
+		if c.isOutSync(*account, repositoryData.CommitHash, snapshotVersionPayload) {
 			c.syncUp(*account, repositoryData, gitService)
 		}
 
@@ -114,8 +114,6 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	utils.Log(utils.LogLevelInfo, "[%s - %s] Syncing up", account.ID.Hex(), account.Domain.Name)
 
 	// Update account status: Out of sync
-	account.Domain.LastCommit = repositoryData.CommitHash
-	account.Domain.LastDate = repositoryData.CommitDate
 	c.updateDomainStatus(account, model.StatusOutSync, model.MessageSyncingUp)
 
 	// Check for changes
@@ -133,7 +131,7 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
 		changeSource = "Repository"
-		if len(diff.Changes) > 0 {
+		if c.isRepositoryOutSync(account, repositoryData, diff) {
 			account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
 		} else {
 			utils.Log(utils.LogLevelInfo, "[%s - %s] Repository is up to date", account.ID.Hex(), account.Domain.Name)
@@ -142,7 +140,7 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 		}
 	} else if len(diff.Changes) > 0 {
 		changeSource = "API"
-		account = c.applyChangesToAPI(account, repositoryData)
+		account = c.applyChangesToAPI(account, repositoryData, diff)
 	}
 
 	if err != nil {
@@ -174,17 +172,18 @@ func (c *CoreHandler) checkForChanges(account model.Account, content string) (mo
 	// Compare Snapshots and get diff
 	diffNew := c.ComparatorService.CheckSnapshotDiff(fromRepo, fromApi, NEW)
 	diffChanged := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
-
-	var diffDeleted model.DiffResult
-	if account.Settings.ForcePrune {
-		diffDeleted = c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
-	}
+	diffDeleted := c.ComparatorService.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
 
 	return c.ComparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), snapshotApi.Snapshot, nil
 }
 
-func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *model.RepositoryData) model.Account {
+func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *model.RepositoryData, diff model.DiffResult) model.Account {
 	utils.Log(utils.LogLevelInfo, "[%s - %s] Pushing changes to API", account.ID.Hex(), account.Domain.Name)
+
+	// Removed deleted if force prune is disabled
+	if !account.Settings.ForcePrune {
+		c.ComparatorService.RemoveDeleted(diff)
+	}
 
 	// Push changes to API
 
@@ -204,14 +203,18 @@ func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot m
 
 	lastCommit, err := gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
 
+	if err != nil {
+		return account, err
+	}
+
 	// Update domain
 	account.Domain.Version = snapshot.Domain.Version
 	account.Domain.LastCommit = lastCommit
 
-	return account, err
+	return account, nil
 }
 
-func (c *CoreHandler) isRepositoryOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
+func (c *CoreHandler) isOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
 	snapshotVersion := c.ApiService.NewDataFromJson([]byte(snapshotVersionPayload)).Snapshot.Domain.Version
 
 	utils.Log(utils.LogLevelDebug, "[%s - %s] Checking account - Last commit: %s - Domain Version: %d - Snapshot Version: %d",
@@ -222,8 +225,13 @@ func (c *CoreHandler) isRepositoryOutSync(account model.Account, lastCommit stri
 		account.Domain.Version != snapshotVersion // API out of sync
 }
 
+func (c *CoreHandler) isRepositoryOutSync(account model.Account, repositoryData *model.RepositoryData, diff model.DiffResult) bool {
+	return account.Domain.Version == 0 || // First/Force-push sync
+		len(repositoryData.Content) <= 1 || // File is empty
+		len(diff.Changes) > 0 // Changes detected
+}
+
 func (c *CoreHandler) updateDomainStatus(account model.Account, status string, message string) {
-	account.Token = ""
 	account.Domain.Status = status
 	account.Domain.Message = message
 	account.Domain.LastDate = time.Now().Format(time.ANSIC)

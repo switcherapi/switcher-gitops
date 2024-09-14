@@ -14,6 +14,7 @@ type IComparatorService interface {
 	CheckSnapshotDiff(left model.Snapshot, right model.Snapshot, diffType DiffType) model.DiffResult
 	MergeResults(diffResults []model.DiffResult) model.DiffResult
 	NewSnapshotFromJson(jsonData []byte) model.Snapshot
+	RemoveDeleted(diffResult model.DiffResult) model.DiffResult
 }
 
 type ComparatorService struct{}
@@ -53,6 +54,17 @@ func (c *ComparatorService) MergeResults(diffResults []model.DiffResult) model.D
 	}
 
 	return result
+}
+
+func (c *ComparatorService) RemoveDeleted(diffResult model.DiffResult) model.DiffResult {
+	diff := model.DiffResult{Changes: []model.DiffDetails{}}
+	for _, change := range diffResult.Changes {
+		if change.Action != string(DELETED) {
+			diff.Changes = append(diff.Changes, change)
+		}
+	}
+
+	return diff
 }
 
 func checkGroupDiff(left model.Snapshot, right model.Snapshot, diffType DiffType, diffResult model.DiffResult) model.DiffResult {

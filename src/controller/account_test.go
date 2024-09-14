@@ -98,8 +98,10 @@ func TestUpdateAccountHandler(t *testing.T) {
 		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		payload, _ := json.Marshal(accountV2)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV2.Domain.ID, bytes.NewBuffer(payload))
+		accountV2Copy := accountV2
+		accountV2Copy.Domain.Message = "Updated successfully"
+		payload, _ := json.Marshal(accountV2Copy)
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV2Copy.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -108,11 +110,11 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 		assert.NotEmpty(t, accountResponse.Token)
-		assert.NotEqual(t, accountV1.Branch, accountResponse.Branch)
-		assert.NotEqual(t, accountV1.Settings.Window, accountResponse.Settings.Window)
-		assert.NotEqual(t, accountV1.Settings.Active, accountResponse.Settings.Active)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Equal(t, model.StatusSynced, accountResponse.Domain.Status)
+		assert.Equal(t, "Updated successfully", accountResponse.Domain.Message)
+		assert.Equal(t, "5m", accountResponse.Settings.Window)
 	})
 
 	t.Run("Should update account token only", func(t *testing.T) {
@@ -137,6 +139,9 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		encryptedToken := utils.Encrypt(accountV1.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		assert.NotEqual(t, encryptedToken, accountResponse.Token)
+
+		decryptedToken, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		assert.Equal(t, "new-token", decryptedToken)
 	})
 
 	t.Run("Should not update an account - invalid request", func(t *testing.T) {

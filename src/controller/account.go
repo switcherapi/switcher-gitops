@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/core"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
@@ -48,6 +49,12 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 		return
 	}
 
+	// Encrypt token before saving
+	if accountRequest.Token != "" {
+		println("Encrypting token", accountRequest.Token)
+		accountRequest.Token = utils.Encrypt(accountRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+	}
+
 	accountCreated, err := controller.AccountRepository.Create(&accountRequest)
 	if err != nil {
 		utils.Log(utils.LogLevelError, "Error creating account: %s", err.Error())
@@ -81,6 +88,11 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
 		return
+	}
+
+	// Encrypt token before saving
+	if accountRequest.Token != "" {
+		accountRequest.Token = utils.Encrypt(accountRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 	}
 
 	accountUpdated, err := controller.AccountRepository.Update(&accountRequest)
