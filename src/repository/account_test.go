@@ -8,15 +8,52 @@ import (
 )
 
 func TestCreateAccount(t *testing.T) {
-	// Given
-	account := givenAccount(true)
+	t.Run("Should create an account", func(t *testing.T) {
+		// Given
+		account := givenAccount(true)
+		account.Domain.ID = "123-create-account"
 
-	// Test
-	createdAccount, err := accountRepository.Create(&account)
+		// Test
+		createdAccount, err := accountRepository.Create(&account)
 
-	// Assert
-	assert.Nil(t, err)
-	assert.NotNil(t, createdAccount.ID)
+		// Assert
+		assert.Nil(t, err)
+		assert.NotNil(t, createdAccount.ID)
+	})
+
+	t.Run("Should create 2 accounts for each environment", func(t *testing.T) {
+		// Given
+		account1 := givenAccount(true)
+		account2 := givenAccount(true)
+		account1.Domain.ID = "123-create-multiple-accounts"
+		account1.Environment = "default"
+		account2.Domain.ID = "123-create-multiple-accounts"
+		account2.Environment = "staging"
+
+		// Test
+		createdAccount1, _ := accountRepository.Create(&account1)
+		createdAccount2, _ := accountRepository.Create(&account2)
+
+		// Assert
+		assert.NotNil(t, createdAccount1.ID)
+		assert.NotNil(t, createdAccount2.ID)
+		assert.NotEqual(t, createdAccount1.ID, createdAccount2.ID)
+	})
+
+	t.Run("Should not create an account - same domain ID and environment", func(t *testing.T) {
+		// Given
+		account := givenAccount(true)
+		account.Domain.ID = "123-create-account-same-domain-id"
+		account.Environment = "default"
+
+		// Test
+		accountRepository.Create(&account)
+		_, err := accountRepository.Create(&account)
+
+		// Assert
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "duplicate key error")
+	})
 }
 
 func TestFetchAccount(t *testing.T) {

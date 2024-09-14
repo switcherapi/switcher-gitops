@@ -60,9 +60,10 @@ func executeRequest(req *http.Request) *httptest.ResponseRecorder {
 // Fixtures
 
 var accountV1 = model.Account{
-	Repository: "switcherapi/switcher-gitops",
-	Branch:     "master",
-	Token:      "github_pat_123",
+	Repository:  "switcherapi/switcher-gitops",
+	Branch:      "master",
+	Token:       "github_pat_123",
+	Environment: "default",
 	Domain: model.DomainDetails{
 		ID:         "123-controller-test",
 		Name:       "Switcher GitOps",
