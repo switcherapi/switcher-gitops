@@ -68,6 +68,7 @@ var accountV1 = model.Account{
 		Name:       "Switcher GitOps",
 		Version:    123,
 		LastCommit: "123",
+		LastDate:   "2021-01-01",
 		Status:     model.StatusSynced,
 		Message:    "Synced successfully",
 	},
@@ -82,11 +83,8 @@ var accountV2 = model.Account{
 	Repository: "switcherapi/switcher-gitops",
 	Branch:     "main",
 	Domain: model.DomainDetails{
-		ID:         "123-controller-test",
-		Name:       "Switcher GitOps",
-		Version:    123,
-		LastCommit: "123",
-		Status:     model.StatusSynced,
+		ID:   "123-controller-test",
+		Name: "Switcher GitOps",
 	},
 	Settings: model.Settings{
 		Active:     false,

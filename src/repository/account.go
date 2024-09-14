@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,9 +38,6 @@ func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
 func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
-
-	// Encrypt token before saving
-	account.Token = utils.Encrypt(account.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 
 	result, err := collection.InsertOne(ctx, account)
 	if err != nil {
@@ -103,11 +99,6 @@ func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() ([]model.Account, e
 func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
-
-	// Encrypt token before saving
-	if account.Token != "" {
-		account.Token = utils.Encrypt(account.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
-	}
 
 	filter := primitive.M{domainIdFilter: account.Domain.ID}
 	update := getUpdateFields(account)
@@ -173,19 +164,38 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 	}
 }
 
-func getUpdateFields(account *model.Account) primitive.M {
-	accountMap := utils.ToMapFromObject(account)
+func getUpdateFields(account *model.Account) bson.M {
+	setMap := bson.M{}
 
-	update := primitive.M{
-		"$set": accountMap,
-	}
+	setMap["repository"] = account.Repository
+	setMap["branch"] = account.Branch
+	setMap["environment"] = account.Environment
+	setMap["domain.name"] = account.Domain.Name
+	setMap["settings.active"] = account.Settings.Active
+	setMap["settings.window"] = account.Settings.Window
+	setMap["settings.forcePrune"] = account.Settings.ForcePrune
 
-	deleteEmpty(accountMap, "token")
+	setIfNotEmpty(setMap, "token", account.Token)
+	setIfNotEmpty(setMap, "domain.version", account.Domain.Version)
+	setIfNotEmpty(setMap, "domain.lastCommit", account.Domain.LastCommit)
+	setIfNotEmpty(setMap, "domain.lastDate", account.Domain.LastDate)
+	setIfNotEmpty(setMap, "domain.status", account.Domain.Status)
+	setIfNotEmpty(setMap, "domain.message", account.Domain.Message)
+
+	update := bson.M{"$set": setMap}
+
 	return update
 }
 
-func deleteEmpty(setMap map[string]interface{}, key string) {
-	if setMap[key] == "" {
-		delete(setMap, key)
+func setIfNotEmpty(setMap bson.M, key string, value interface{}) {
+	switch v := value.(type) {
+	case string:
+		if v != "" {
+			setMap[key] = v
+		}
+	case int:
+		if v != 0 {
+			setMap[key] = v
+		}
 	}
 }
