@@ -28,6 +28,7 @@ type AccountRepositoryMongo struct {
 }
 
 const domainIdFilter = "domain.id"
+const environmentFilter = "environment"
 const settingsActiveFilter = "settings.active"
 
 func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
@@ -154,13 +155,16 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 	collection := db.Collection(model.CollectionName)
 	indexOptions := options.Index().SetUnique(true)
 	indexModel := mongo.IndexModel{
-		Keys:    bson.M{domainIdFilter: 1},
+		Keys: bson.D{
+			{Key: domainIdFilter, Value: 1},
+			{Key: environmentFilter, Value: 1},
+		},
 		Options: indexOptions,
 	}
 
 	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error creating index for domain.id: %s", err.Error())
+		utils.Log(utils.LogLevelError, "Error creating index for account (environment, domain.id): %s", err.Error())
 	}
 }
 

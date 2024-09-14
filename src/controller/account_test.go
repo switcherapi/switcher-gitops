@@ -19,9 +19,8 @@ const NOT_FOUND = "/not-found"
 func TestCreateAccountHandler(t *testing.T) {
 	t.Run("Should create an account", func(t *testing.T) {
 		// Test
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-create-account"
-		payload, _ := json.Marshal(accountV1Copy)
+		accountV1.Domain.ID = "123-controller-create-account"
+		payload, _ := json.Marshal(accountV1)
 		req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
@@ -31,10 +30,10 @@ func TestCreateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1Copy.Repository, accountResponse.Repository)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 
 		token, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
-		assert.Equal(t, accountV1Copy.Token, token)
+		assert.Equal(t, accountV1.Token, token)
 	})
 
 	t.Run("Should not create an account - invalid request", func(t *testing.T) {
@@ -66,13 +65,12 @@ func TestCreateAccountHandler(t *testing.T) {
 func TestFetchAccountHandler(t *testing.T) {
 	t.Run("Should fetch an account by domain ID", func(t *testing.T) {
 		// Create an account
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-fetch-account"
-		accountController.CreateAccountHandler(givenAccountRequest(*accountV1Copy))
+		accountV1.Domain.ID = "123-controller-fetch-account"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1Copy.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -81,7 +79,7 @@ func TestFetchAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1Copy.Repository, accountResponse.Repository)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 	})
 
 	t.Run("Should not fetch an account by domain ID - not found", func(t *testing.T) {
@@ -99,16 +97,14 @@ func TestFetchAccountHandler(t *testing.T) {
 func TestUpdateAccountHandler(t *testing.T) {
 	t.Run("Should update an account", func(t *testing.T) {
 		// Create an account
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-update-account"
-		accountController.CreateAccountHandler(givenAccountRequest(*accountV1Copy))
+		accountV1.Domain.ID = "123-controller-update-account"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		accountV2Copy := &accountV2
-		accountV2Copy.Domain.ID = accountV1Copy.Domain.ID
-		accountV2Copy.Domain.Message = "Updated successfully"
-		payload, _ := json.Marshal(accountV2Copy)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV2Copy.Domain.ID, bytes.NewBuffer(payload))
+		accountV2.Domain.ID = accountV1.Domain.ID
+		accountV2.Domain.Message = "Updated successfully"
+		payload, _ := json.Marshal(accountV2)
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV2.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -126,16 +122,15 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 	t.Run("Should update account token only", func(t *testing.T) {
 		// Create an account
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-update-account-token"
-		accountController.CreateAccountHandler(givenAccountRequest(*accountV1Copy))
+		accountV1.Domain.ID = "123-controller-update-account-token"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		accountRequest := *accountV1Copy
+		accountRequest := accountV1
 		accountRequest.Token = "new-token"
 
 		payload, _ := json.Marshal(accountRequest)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV1Copy.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -144,9 +139,9 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1Copy.Repository, accountResponse.Repository)
+		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
 
-		encryptedToken := utils.Encrypt(accountV1Copy.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		encryptedToken := utils.Encrypt(accountV1.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		assert.NotEqual(t, encryptedToken, accountResponse.Token)
 
 		decryptedToken, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
@@ -166,15 +161,14 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 	t.Run("Should not update an account - not found", func(t *testing.T) {
 		// Create an account
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-update-account-not-found"
-		accountController.CreateAccountHandler(givenAccountRequest(*accountV1Copy))
+		accountV1.Domain.ID = "123-controller-update-account-not-found"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Replace the domain ID to force an error
-		accountV1Copy.Domain.ID = "111"
+		accountV1.Domain.ID = "111"
 
 		// Test
-		payload, _ := json.Marshal(accountV1Copy)
+		payload, _ := json.Marshal(accountV1)
 		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath+NOT_FOUND, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
@@ -187,12 +181,11 @@ func TestUpdateAccountHandler(t *testing.T) {
 func TestDeleteAccountHandler(t *testing.T) {
 	t.Run("Should delete an account", func(t *testing.T) {
 		// Create an account
-		accountV1Copy := &accountV1
-		accountV1Copy.Domain.ID = "123-controller-delete-account"
-		accountController.CreateAccountHandler(givenAccountRequest(*accountV1Copy))
+		accountV1.Domain.ID = "123-controller-delete-account"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/"+accountV1Copy.Domain.ID, nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, nil)
 		response := executeRequest(req)
 
 		// Assert
