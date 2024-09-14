@@ -198,6 +198,38 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
+	t.Run("Should return changes in config after calling RemoveDeleted", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_config.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+		actual = c.RemoveDeleted(actual)
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "CHANGED",
+				"diff": "CONFIG",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_2"
+				],
+				"content": {
+					"activated": true,
+					"description": "New description"
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
 	t.Run("Should return new config", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
