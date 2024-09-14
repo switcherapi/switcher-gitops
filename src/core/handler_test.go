@@ -26,7 +26,7 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 		status, err := coreHandler.InitCoreHandlerCoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -50,7 +50,7 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 		status, _ := coreHandler.InitCoreHandlerCoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -76,7 +76,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusPending, accountFromDb.Domain.Status)
 		assert.Equal(t, "Account was deactivated", accountFromDb.Domain.Message)
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -99,7 +99,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch repository data")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -125,7 +125,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch snapshot version")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -146,12 +146,12 @@ func TestStartAccountHandler(t *testing.T) {
 		numGoroutinesBefore := runtime.NumGoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 		numGoroutinesAfter := runtime.NumGoroutine()
 
 		// Assert
-		_, err := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		_, err := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.LessOrEqual(t, numGoroutinesAfter, numGoroutinesBefore)
 		assert.NotNil(t, err)
 
@@ -175,7 +175,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -221,7 +221,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -255,7 +255,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -289,7 +289,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -347,7 +347,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -375,7 +375,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")
