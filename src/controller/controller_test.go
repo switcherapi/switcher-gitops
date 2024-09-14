@@ -81,8 +81,9 @@ var accountV1 = model.Account{
 }
 
 var accountV2 = model.Account{
-	Repository: "switcherapi/switcher-gitops",
-	Branch:     "main",
+	Repository:  "switcherapi/switcher-gitops",
+	Branch:      "main",
+	Environment: "default",
 	Domain: model.DomainDetails{
 		ID:   "123-controller-test",
 		Name: "Switcher GitOps",

@@ -16,11 +16,11 @@ import (
 type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
 	FetchByAccountId(accountId string) (*model.Account, error)
-	FetchByDomainId(domainId string) (*model.Account, error)
+	FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error)
 	FetchAllActiveAccounts() ([]model.Account, error)
 	Update(account *model.Account) (*model.Account, error)
 	DeleteByAccountId(accountId string) error
-	DeleteByDomainId(domainId string) error
+	DeleteByDomainIdEnvironment(domainId string, environment string) error
 }
 
 type AccountRepositoryMongo struct {
@@ -64,7 +64,7 @@ func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.A
 	return &account, nil
 }
 
-func (repo *AccountRepositoryMongo) FetchByDomainId(domainId string) (*model.Account, error) {
+func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
@@ -101,7 +101,7 @@ func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Accou
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	filter := primitive.M{domainIdFilter: account.Domain.ID}
+	filter := primitive.M{domainIdFilter: account.Domain.ID, environmentFilter: account.Environment}
 	update := getUpdateFields(account)
 
 	var updatedAccount model.Account
@@ -131,11 +131,11 @@ func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
 	return err
 }
 
-func (repo *AccountRepositoryMongo) DeleteByDomainId(domainId string) error {
+func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId string, environment string) error {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	filter := primitive.M{domainIdFilter: domainId}
+	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
 	result, err := collection.DeleteOne(ctx, filter)
 
 	if result.DeletedCount == 0 {

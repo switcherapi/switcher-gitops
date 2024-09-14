@@ -21,7 +21,7 @@ func TestCreateAccount(t *testing.T) {
 		assert.NotNil(t, createdAccount.ID)
 	})
 
-	t.Run("Should create 2 accounts for each environment", func(t *testing.T) {
+	t.Run("Should create accounts for each environment", func(t *testing.T) {
 		// Given
 		account1 := givenAccount(true)
 		account2 := givenAccount(true)
@@ -79,23 +79,23 @@ func TestFetchAccount(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Should fetch an account by domain ID", func(t *testing.T) {
+	t.Run("Should fetch an account by domain ID and environment", func(t *testing.T) {
 		// Given
 		account := givenAccount(true)
 		account.Domain.ID = "123-fetch-account-by-domain-id"
 		accountCreated, _ := accountRepository.Create(&account)
 
 		// Test
-		fetchedAccount, err := accountRepository.FetchByDomainId(accountCreated.Domain.ID)
+		fetchedAccount, err := accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 
 		// Assert
 		assert.Nil(t, err)
 		assert.NotNil(t, fetchedAccount.ID)
 	})
 
-	t.Run("Should not fetch an account by domain ID - not found", func(t *testing.T) {
+	t.Run("Should not fetch an account by domain ID and environment - not found", func(t *testing.T) {
 		// Test
-		_, err := accountRepository.FetchByDomainId("non_existent_domain_id")
+		_, err := accountRepository.FetchByDomainIdEnvironment("non_existent_domain_id", "default")
 
 		// Assert
 		assert.NotNil(t, err)
@@ -175,22 +175,22 @@ func TestDeleteAccount(t *testing.T) {
 		assert.Equal(t, "Account not found for id: non_existent_id", err.Error())
 	})
 
-	t.Run("Should delete an account by domain ID", func(t *testing.T) {
+	t.Run("Should delete an account by domain ID and environment", func(t *testing.T) {
 		// Given
 		account := givenAccount(true)
 		account.Domain.ID = "123-delete-account-by-domain-id"
 		accountCreated, _ := accountRepository.Create(&account)
 
 		// Test
-		err := accountRepository.DeleteByDomainId(accountCreated.Domain.ID)
+		err := accountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 
 		// Assert
 		assert.Nil(t, err)
 	})
 
-	t.Run("Should not delete an account by domain ID - not found", func(t *testing.T) {
+	t.Run("Should not delete an account by domain ID and environment - not found", func(t *testing.T) {
 		// Test
-		err := accountRepository.DeleteByDomainId("non_existent_domain_id")
+		err := accountRepository.DeleteByDomainIdEnvironment("non_existent_domain_id", "default")
 
 		// Assert
 		assert.NotNil(t, err)
