@@ -17,7 +17,8 @@ type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
 	FetchByAccountId(accountId string) (*model.Account, error)
 	FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error)
-	FetchAllActiveAccounts() ([]model.Account, error)
+	FetchAllByDomainId(domainId string) []model.Account
+	FetchAllActiveAccounts() []model.Account
 	Update(account *model.Account) (*model.Account, error)
 	DeleteByAccountId(accountId string) error
 	DeleteByDomainIdEnvironment(domainId string, environment string) error
@@ -69,7 +70,7 @@ func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, 
 	defer cancel()
 
 	var account model.Account
-	filter := primitive.M{domainIdFilter: domainId}
+	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
 	err := collection.FindOne(ctx, filter).Decode(&account)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,26 @@ func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, 
 	return &account, nil
 }
 
-func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() ([]model.Account, error) {
+func (repo *AccountRepositoryMongo) FetchAllByDomainId(domainId string) []model.Account {
+	collection, ctx, cancel := getDbContext(repo)
+	defer cancel()
+
+	filter := primitive.M{domainIdFilter: domainId}
+	cursor, _ := collection.Find(ctx, filter)
+
+	var accounts []model.Account
+	for cursor.Next(ctx) {
+		var account model.Account
+		err := cursor.Decode(&account)
+		if err == nil {
+			accounts = append(accounts, account)
+		}
+	}
+
+	return accounts
+}
+
+func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() []model.Account {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
@@ -94,7 +114,7 @@ func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() ([]model.Account, e
 		}
 	}
 
-	return accounts, nil
+	return accounts
 }
 
 func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Account, error) {

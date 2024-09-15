@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -12,7 +11,7 @@ func ResponseJSON(w http.ResponseWriter, data interface{}, status int) {
 
 	encodedData, err := json.Marshal(data)
 	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
+		Log(LogLevelError, "Error encoding JSON: %s", err.Error())
 		return
 	}
 

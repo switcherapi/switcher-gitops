@@ -115,11 +115,32 @@ func TestFetchAccount(t *testing.T) {
 		accountRepository.Create(&account2)
 
 		// Test
-		accounts, err := accountRepository.FetchAllActiveAccounts()
+		accounts := accountRepository.FetchAllActiveAccounts()
 
 		// Assert
-		assert.Nil(t, err)
+		assert.NotNil(t, accounts)
 		assert.Equal(t, 1, len(accounts))
+	})
+
+	t.Run("Should fetch all accounts by domain ID", func(t *testing.T) {
+		// Drop collection
+		mongoDb.Collection("accounts").Drop(context.Background())
+
+		// Given
+		account1 := givenAccount(true)
+		account1.Domain.ID = "123-fetch-all-accounts-by-domain-id"
+		account2 := givenAccount(true)
+		account2.Domain.ID = "123-fetch-all-accounts-by-domain-id"
+
+		accountRepository.Create(&account1)
+		accountRepository.Create(&account2)
+
+		// Test
+		accounts := accountRepository.FetchAllByDomainId(account1.Domain.ID)
+
+		// Assert
+		assert.NotNil(t, accounts)
+		assert.Equal(t, 2, len(accounts))
 	})
 }
 

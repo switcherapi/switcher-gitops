@@ -33,6 +33,7 @@ func NewAccountController(repo repository.AccountRepository, coreHandler *core.C
 func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler {
 	r.NewRoute().Path(controller.RouteAccountPath).Name("CreateAccount").HandlerFunc(controller.CreateAccountHandler).Methods(http.MethodPost)
 	r.NewRoute().Path(controller.RouteAccountPath).Name("UpdateAccount").HandlerFunc(controller.UpdateAccountHandler).Methods(http.MethodPut)
+	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").HandlerFunc(controller.FetchAllAccountsByDomainIdHandler).Methods(http.MethodGet)
 	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").HandlerFunc(controller.FetchAccountHandler).Methods(http.MethodGet)
 	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}/{enviroment}").Name("DeleteAccount").HandlerFunc(controller.DeleteAccountHandler).Methods(http.MethodDelete)
 
@@ -78,6 +79,19 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 	}
 
 	utils.ResponseJSON(w, account, http.StatusOK)
+}
+
+func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.ResponseWriter, r *http.Request) {
+	domainId := mux.Vars(r)["domainId"]
+
+	accounts := controller.AccountRepository.FetchAllByDomainId(domainId)
+	if accounts == nil {
+		utils.Log(utils.LogLevelError, "Not found accounts for domain: %s", domainId)
+		utils.ResponseJSON(w, ErrorResponse{Error: "Not found accounts for domain: " + domainId}, http.StatusNotFound)
+		return
+	}
+
+	utils.ResponseJSON(w, accounts, http.StatusOK)
 }
 
 func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter, r *http.Request) {
