@@ -82,7 +82,7 @@ func initCoreHandler(db *mongo.Database) *core.CoreHandler {
 	)
 
 	coreHandler := core.NewCoreHandler(accountRepository, apiService, comparatorService)
-	coreHandler.InitCoreHandlerCoroutine()
+	coreHandler.InitCoreHandlerGoroutine()
 
 	return coreHandler
 }

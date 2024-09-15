@@ -90,17 +90,53 @@ func TestFetchAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, response.Code)
 		assert.Equal(t, "{\"error\":\"Account not found\"}", response.Body.String())
 	})
+
+	t.Run("Should fetch all accounts by domain ID", func(t *testing.T) {
+		// Create an account
+		accountV1.Domain.ID = "123-controller-fetch-all-accounts"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		accountV1.Environment = "staging"
+		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+
+		// Test
+		payload := []byte("")
+		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
+		response := executeRequest(req)
+
+		// Assert
+		var accountsResponse []model.Account
+		err := json.NewDecoder(response.Body).Decode(&accountsResponse)
+
+		assert.Equal(t, http.StatusOK, response.Code)
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(accountsResponse))
+	})
+
+	t.Run("Should not fetch all accounts by domain ID - not found", func(t *testing.T) {
+		// Test
+		payload := []byte("")
+		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/not-found", bytes.NewBuffer(payload))
+		response := executeRequest(req)
+
+		// Assert
+		assert.Equal(t, http.StatusNotFound, response.Code)
+		assert.Equal(t, "{\"error\":\"Not found accounts for domain: not-found\"}", response.Body.String())
+	})
 }
 
 func TestUpdateAccountHandler(t *testing.T) {
 	t.Run("Should update an account", func(t *testing.T) {
 		// Create an account
 		accountV1.Domain.ID = "123-controller-update-account"
+		accountV1.Environment = "default"
 		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
-		// Test
-		accountV2.Domain.ID = accountV1.Domain.ID
+		// Update the account
+		accountV2.Domain.ID = "123-controller-update-account"
+		accountV2.Environment = "default"
 		accountV2.Domain.Message = "Updated successfully"
+
+		// Test
 		payload, _ := json.Marshal(accountV2)
 		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)

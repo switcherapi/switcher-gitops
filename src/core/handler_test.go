@@ -12,7 +12,7 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
-func TestInitCoreHandlerCoroutine(t *testing.T) {
+func TestInitCoreHandlerGoroutine(t *testing.T) {
 	t.Run("Should start account handlers for all active accounts", func(t *testing.T) {
 		// Given
 		fakeApiService := NewFakeApiService()
@@ -23,7 +23,7 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		status, err := coreHandler.InitCoreHandlerCoroutine()
+		status, err := coreHandler.InitCoreHandlerGoroutine()
 
 		// Terminate the goroutine
 		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
@@ -46,8 +46,8 @@ func TestInitCoreHandlerCoroutine(t *testing.T) {
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
-		coreHandler.InitCoreHandlerCoroutine()
-		status, _ := coreHandler.InitCoreHandlerCoroutine()
+		coreHandler.InitCoreHandlerGoroutine()
+		status, _ := coreHandler.InitCoreHandlerGoroutine()
 
 		// Terminate the goroutine
 		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
@@ -211,7 +211,6 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-up-to-date-not-synced"
-		account.Domain.Version = -1 // Different from the API version
 		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
 
 		// Test
@@ -350,7 +349,7 @@ func TestStartAccountHandler(t *testing.T) {
 		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
-		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
@@ -379,7 +378,7 @@ func TestStartAccountHandler(t *testing.T) {
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")
-		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
