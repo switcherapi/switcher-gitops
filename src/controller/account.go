@@ -13,9 +13,9 @@ import (
 )
 
 type AccountController struct {
-	CoreHandler       *core.CoreHandler
-	AccountRepository repository.AccountRepository
-	RouteAccountPath  string
+	coreHandler       *core.CoreHandler
+	accountRepository repository.AccountRepository
+	routeAccountPath  string
 }
 
 type ErrorResponse struct {
@@ -24,18 +24,18 @@ type ErrorResponse struct {
 
 func NewAccountController(repo repository.AccountRepository, coreHandler *core.CoreHandler) *AccountController {
 	return &AccountController{
-		CoreHandler:       coreHandler,
-		AccountRepository: repo,
-		RouteAccountPath:  "/account",
+		coreHandler:       coreHandler,
+		accountRepository: repo,
+		routeAccountPath:  "/account",
 	}
 }
 
 func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler {
-	r.NewRoute().Path(controller.RouteAccountPath).Name("CreateAccount").HandlerFunc(controller.CreateAccountHandler).Methods(http.MethodPost)
-	r.NewRoute().Path(controller.RouteAccountPath).Name("UpdateAccount").HandlerFunc(controller.UpdateAccountHandler).Methods(http.MethodPut)
-	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").HandlerFunc(controller.FetchAllAccountsByDomainIdHandler).Methods(http.MethodGet)
-	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").HandlerFunc(controller.FetchAccountHandler).Methods(http.MethodGet)
-	r.NewRoute().Path(controller.RouteAccountPath + "/{domainId}/{enviroment}").Name("DeleteAccount").HandlerFunc(controller.DeleteAccountHandler).Methods(http.MethodDelete)
+	r.NewRoute().Path(controller.routeAccountPath).Name("CreateAccount").HandlerFunc(controller.CreateAccountHandler).Methods(http.MethodPost)
+	r.NewRoute().Path(controller.routeAccountPath).Name("UpdateAccount").HandlerFunc(controller.UpdateAccountHandler).Methods(http.MethodPut)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").HandlerFunc(controller.FetchAllAccountsByDomainIdHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").HandlerFunc(controller.FetchAccountHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("DeleteAccount").HandlerFunc(controller.DeleteAccountHandler).Methods(http.MethodDelete)
 
 	return r
 }
@@ -53,7 +53,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 		accountRequest.Token = utils.Encrypt(accountRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 	}
 
-	accountCreated, err := controller.AccountRepository.Create(&accountRequest)
+	accountCreated, err := controller.accountRepository.Create(&accountRequest)
 	if err != nil {
 		utils.Log(utils.LogLevelError, "Error creating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error creating account"}, http.StatusInternalServerError)
@@ -62,7 +62,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 
 	// Initialize account handler
 	gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
-	go controller.CoreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
+	go controller.coreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
 
 	utils.ResponseJSON(w, accountCreated, http.StatusCreated)
 }
@@ -71,7 +71,7 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 
-	account, err := controller.AccountRepository.FetchByDomainIdEnvironment(domainId, enviroment)
+	account, err := controller.accountRepository.FetchByDomainIdEnvironment(domainId, enviroment)
 	if err != nil {
 		utils.Log(utils.LogLevelError, "Error fetching account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Account not found"}, http.StatusNotFound)
@@ -84,7 +84,7 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.ResponseWriter, r *http.Request) {
 	domainId := mux.Vars(r)["domainId"]
 
-	accounts := controller.AccountRepository.FetchAllByDomainId(domainId)
+	accounts := controller.accountRepository.FetchAllByDomainId(domainId)
 	if accounts == nil {
 		utils.Log(utils.LogLevelError, "Not found accounts for domain: %s", domainId)
 		utils.ResponseJSON(w, ErrorResponse{Error: "Not found accounts for domain: " + domainId}, http.StatusNotFound)
@@ -108,7 +108,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 		accountRequest.Token = utils.Encrypt(accountRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 	}
 
-	accountUpdated, err := controller.AccountRepository.Update(&accountRequest)
+	accountUpdated, err := controller.accountRepository.Update(&accountRequest)
 	if err != nil {
 		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error updating account"}, http.StatusInternalServerError)
@@ -122,7 +122,7 @@ func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter,
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 
-	err := controller.AccountRepository.DeleteByDomainIdEnvironment(domainId, enviroment)
+	err := controller.accountRepository.DeleteByDomainIdEnvironment(domainId, enviroment)
 	if err != nil {
 		utils.Log(utils.LogLevelError, "Error deleting account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error deleting account: " + err.Error()}, http.StatusInternalServerError)

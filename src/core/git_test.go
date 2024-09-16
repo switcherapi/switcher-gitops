@@ -29,9 +29,9 @@ func TestNewGitService(t *testing.T) {
 	gitService := NewGitService(repoURL, encryptedToken, branchName)
 
 	// Assert
-	assert.Equal(t, repoURL, gitService.RepoURL)
-	assert.Equal(t, encryptedToken, gitService.EncryptedToken)
-	assert.Equal(t, branchName, gitService.BranchName)
+	assert.Equal(t, repoURL, gitService.repoURL)
+	assert.Equal(t, encryptedToken, gitService.encryptedToken)
+	assert.Equal(t, branchName, gitService.branchName)
 }
 
 func TestUpdateRepositorySettings(t *testing.T) {
@@ -45,9 +45,9 @@ func TestUpdateRepositorySettings(t *testing.T) {
 	gitService.UpdateRepositorySettings("newRepoURL", "newEncryptedToken", "newBranch")
 
 	// Assert
-	assert.Equal(t, "newRepoURL", gitService.RepoURL)
-	assert.Equal(t, "newEncryptedToken", gitService.EncryptedToken)
-	assert.Equal(t, "newBranch", gitService.BranchName)
+	assert.Equal(t, "newRepoURL", gitService.repoURL)
+	assert.Equal(t, "newEncryptedToken", gitService.encryptedToken)
+	assert.Equal(t, "newBranch", gitService.branchName)
 }
 
 func TestGetRepositoryData(t *testing.T) {

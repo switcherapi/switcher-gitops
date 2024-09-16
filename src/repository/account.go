@@ -18,7 +18,7 @@ type AccountRepository interface {
 	FetchByAccountId(accountId string) (*model.Account, error)
 	FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error)
 	FetchAllByDomainId(domainId string) []model.Account
-	FetchAllActiveAccounts() []model.Account
+	FetchAllAccounts() []model.Account
 	Update(account *model.Account) (*model.Account, error)
 	DeleteByAccountId(accountId string) error
 	DeleteByDomainIdEnvironment(domainId string, environment string) error
@@ -30,7 +30,6 @@ type AccountRepositoryMongo struct {
 
 const domainIdFilter = "domain.id"
 const environmentFilter = "environment"
-const settingsActiveFilter = "settings.active"
 
 func NewAccountRepositoryMongo(db *mongo.Database) *AccountRepositoryMongo {
 	registerAccountRepositoryValidators(db)
@@ -98,12 +97,11 @@ func (repo *AccountRepositoryMongo) FetchAllByDomainId(domainId string) []model.
 	return accounts
 }
 
-func (repo *AccountRepositoryMongo) FetchAllActiveAccounts() []model.Account {
+func (repo *AccountRepositoryMongo) FetchAllAccounts() []model.Account {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	filter := primitive.M{settingsActiveFilter: true}
-	cursor, _ := collection.Find(ctx, filter)
+	cursor, _ := collection.Find(ctx, primitive.M{})
 
 	var accounts []model.Account
 	for cursor.Next(ctx) {

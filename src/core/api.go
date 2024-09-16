@@ -29,14 +29,14 @@ type IAPIService interface {
 }
 
 type ApiService struct {
-	ApiKey string
-	ApiUrl string
+	apiKey string
+	apiUrl string
 }
 
 func NewApiService(apiKey string, apiUrl string) *ApiService {
 	return &ApiService{
-		ApiKey: apiKey,
-		ApiUrl: apiUrl,
+		apiKey: apiKey,
+		apiUrl: apiUrl,
 	}
 }
 
@@ -70,7 +70,7 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 
 func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
 	reqBody, _ := json.Marshal(diff)
-	responseBody, err := a.doPostRequest(a.ApiUrl+"/gitops/apply", domainId, reqBody)
+	responseBody, err := a.doPostRequest(a.apiUrl+"/gitops/apply", domainId, reqBody)
 
 	if err != nil {
 		return ApplyChangeResponse{}, err
@@ -83,11 +83,11 @@ func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff
 
 func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, error) {
 	// Generate a bearer token
-	token := generateBearerToken(a.ApiKey, domainId)
+	token := generateBearerToken(a.apiKey, domainId)
 
 	// Create a new request
 	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
-	req, _ := http.NewRequest("POST", a.ApiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
+	req, _ := http.NewRequest("POST", a.apiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
 
 	// Set the request headers
 	setHeaders(req, token)
@@ -106,7 +106,7 @@ func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, er
 
 func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (string, error) {
 	// Generate a bearer token
-	token := generateBearerToken(a.ApiKey, domainId)
+	token := generateBearerToken(a.apiKey, domainId)
 
 	// Create a new request
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
