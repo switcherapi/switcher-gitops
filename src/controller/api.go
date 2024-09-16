@@ -11,8 +11,8 @@ import (
 )
 
 type ApiController struct {
-	CoreHandler       *core.CoreHandler
-	RouteCheckApiPath string
+	coreHandler       *core.CoreHandler
+	routeCheckApiPath string
 }
 
 type ApiCheckResponse struct {
@@ -32,13 +32,13 @@ type ApiSettingsResponse struct {
 
 func NewApiController(coreHandler *core.CoreHandler) *ApiController {
 	return &ApiController{
-		CoreHandler:       coreHandler,
-		RouteCheckApiPath: "/api/check",
+		coreHandler:       coreHandler,
+		routeCheckApiPath: "/api/check",
 	}
 }
 
 func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
-	r.NewRoute().Path(controller.RouteCheckApiPath).Name("CheckApi").HandlerFunc(controller.CheckApiHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeCheckApiPath).Name("CheckApi").HandlerFunc(controller.CheckApiHandler).Methods(http.MethodGet)
 
 	return r
 }
@@ -52,7 +52,7 @@ func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.
 			SwitcherURL:       config.GetEnv("SWITCHER_API_URL"),
 			SwitcherSecret:    len(config.GetEnv("SWITCHER_API_JWT_SECRET")) > 0,
 			GitTokenSecret:    len(config.GetEnv("GIT_TOKEN_PRIVATE_KEY")) > 0,
-			CoreHandlerStatus: controller.CoreHandler.Status,
+			CoreHandlerStatus: controller.coreHandler.Status,
 			NumGoroutines:     runtime.NumGoroutine(),
 		},
 	}, http.StatusOK)

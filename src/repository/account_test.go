@@ -101,7 +101,7 @@ func TestFetchAccount(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Should fetch all active accounts", func(t *testing.T) {
+	t.Run("Should fetch all accounts", func(t *testing.T) {
 		// Drop collection
 		mongoDb.Collection("accounts").Drop(context.Background())
 
@@ -115,11 +115,11 @@ func TestFetchAccount(t *testing.T) {
 		accountRepository.Create(&account2)
 
 		// Test
-		accounts := accountRepository.FetchAllActiveAccounts()
+		accounts := accountRepository.FetchAllAccounts()
 
 		// Assert
 		assert.NotNil(t, accounts)
-		assert.Equal(t, 1, len(accounts))
+		assert.Equal(t, 2, len(accounts))
 	})
 
 	t.Run("Should fetch all accounts by domain ID", func(t *testing.T) {

@@ -16,17 +16,17 @@ func TestInitCoreHandlerGoroutine(t *testing.T) {
 	t.Run("Should start account handlers for all active accounts", func(t *testing.T) {
 		// Given
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-init-core-handler"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		status, err := coreHandler.InitCoreHandlerGoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		coreHandler.accountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -39,18 +39,18 @@ func TestInitCoreHandlerGoroutine(t *testing.T) {
 	t.Run("Should not start account handlers when core handler is already running", func(t *testing.T) {
 		// Given
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-not-init-core-handler"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		coreHandler.InitCoreHandlerGoroutine()
 		status, _ := coreHandler.InitCoreHandlerGoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		coreHandler.accountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 
 		// Assert
@@ -68,7 +68,7 @@ func TestStartAccountHandler(t *testing.T) {
 		account := givenAccount()
 		account.Domain.ID = "123-not-active"
 		account.Settings.Active = false
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -76,7 +76,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusPending, accountFromDb.Domain.Status)
 		assert.Equal(t, "Account was deactivated", accountFromDb.Domain.Message)
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -91,7 +91,7 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-error-get-repo-data"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -99,7 +99,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch repository data")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -113,11 +113,11 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeApiService := NewFakeApiService()
 		fakeApiService.throwErrorVersion = true
 
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-error-fetch-snapshot-version"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -125,7 +125,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch snapshot version")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
@@ -139,19 +139,19 @@ func TestStartAccountHandler(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-deleted"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
 		numGoroutinesBefore := runtime.NumGoroutine()
 
 		// Terminate the goroutine
-		coreHandler.AccountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		coreHandler.accountRepository.DeleteByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		time.Sleep(1 * time.Second)
 		numGoroutinesAfter := runtime.NumGoroutine()
 
 		// Assert
-		_, err := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		_, err := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.LessOrEqual(t, numGoroutinesAfter, numGoroutinesBefore)
 		assert.NotNil(t, err)
 
@@ -162,11 +162,11 @@ func TestStartAccountHandler(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -175,7 +175,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -207,11 +207,11 @@ func TestStartAccountHandler(t *testing.T) {
 			}
 		}`
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-up-to-date-not-synced"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -220,7 +220,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -239,13 +239,13 @@ func TestStartAccountHandler(t *testing.T) {
 			}
 		}`
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync-prune"
 		account.Domain.Version = 1
 		account.Settings.ForcePrune = true
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -254,7 +254,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -273,13 +273,13 @@ func TestStartAccountHandler(t *testing.T) {
 			}
 		}`
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-out-sync-not-prune"
 		account.Domain.Version = 1
 		account.Settings.ForcePrune = false
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -288,7 +288,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -304,11 +304,11 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeGitService.lastCommit = "111"
 
 		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-newer-version"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -317,7 +317,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
+		accountFromDb, _ := coreHandler.accountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
 		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
 		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
@@ -333,11 +333,11 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeApiService := NewFakeApiService()
 		fakeApiService.throwErrorSnapshot = true
 
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-api-error"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -346,7 +346,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to check for changes")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
@@ -361,11 +361,11 @@ func TestStartAccountHandler(t *testing.T) {
 		fakeGitService.errorPushChanges = "authorization failed"
 		fakeApiService := NewFakeApiService()
 
-		coreHandler = NewCoreHandler(coreHandler.AccountRepository, fakeApiService, NewComparatorService())
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
 
 		account := givenAccount()
 		account.Domain.ID = "123-no-permission"
-		accountCreated, _ := coreHandler.AccountRepository.Create(&account)
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
 		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
@@ -374,7 +374,7 @@ func TestStartAccountHandler(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Assert
-		accountFromDb, _ := coreHandler.AccountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")

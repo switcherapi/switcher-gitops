@@ -19,7 +19,7 @@ func TestCreateAccountHandler(t *testing.T) {
 		// Test
 		accountV1.Domain.ID = "123-controller-create-account"
 		payload, _ := json.Marshal(accountV1)
-		req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -37,7 +37,7 @@ func TestCreateAccountHandler(t *testing.T) {
 	t.Run("Should not create an account - invalid request", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -51,7 +51,7 @@ func TestCreateAccountHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(accountV1)
-		req, _ := http.NewRequest(http.MethodPost, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -68,7 +68,7 @@ func TestFetchAccountHandler(t *testing.T) {
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -83,7 +83,7 @@ func TestFetchAccountHandler(t *testing.T) {
 	t.Run("Should not fetch an account by domain ID / environment - not found", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/not-found/default", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/not-found/default", bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -100,7 +100,7 @@ func TestFetchAccountHandler(t *testing.T) {
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -115,7 +115,7 @@ func TestFetchAccountHandler(t *testing.T) {
 	t.Run("Should not fetch all accounts by domain ID - not found", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.RouteAccountPath+"/not-found", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/not-found", bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -138,7 +138,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(accountV2)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -164,7 +164,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		accountRequest.Token = "new-token"
 
 		payload, _ := json.Marshal(accountRequest)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -185,7 +185,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 	t.Run("Should not update an account - invalid request", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -203,7 +203,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(accountV1)
-		req, _ := http.NewRequest(http.MethodPut, accountController.RouteAccountPath, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req)
 
 		// Assert
@@ -219,7 +219,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
 
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, nil)
 		response := executeRequest(req)
 
 		// Assert
@@ -228,7 +228,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 	t.Run("Should not delete an account by domain ID / environment - not found", func(t *testing.T) {
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.RouteAccountPath+"/not-found/default", nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/not-found/default", nil)
 		response := executeRequest(req)
 
 		// Assert
@@ -241,7 +241,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 func givenAccountRequest(data model.Account) (*httptest.ResponseRecorder, *http.Request) {
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, accountController.RouteAccountPath, nil)
+	r := httptest.NewRequest(http.MethodPost, accountController.routeAccountPath, nil)
 
 	// Encode the account request as JSON
 	body, _ := json.Marshal(data)

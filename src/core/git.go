@@ -22,23 +22,23 @@ type IGitService interface {
 }
 
 type GitService struct {
-	RepoURL        string
-	EncryptedToken string
-	BranchName     string
+	repoURL        string
+	encryptedToken string
+	branchName     string
 }
 
 func NewGitService(repoURL string, encryptedToken string, branchName string) *GitService {
 	return &GitService{
-		RepoURL:        repoURL,
-		EncryptedToken: encryptedToken,
-		BranchName:     branchName,
+		repoURL:        repoURL,
+		encryptedToken: encryptedToken,
+		branchName:     branchName,
 	}
 }
 
 func (g *GitService) UpdateRepositorySettings(repository string, encryptedToken string, branch string) {
-	g.RepoURL = repository
-	g.EncryptedToken = encryptedToken
-	g.BranchName = branch
+	g.repoURL = repository
+	g.encryptedToken = encryptedToken
+	g.branchName = branch
 }
 
 func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
@@ -140,14 +140,14 @@ func (g *GitService) getCommitObject() (*object.Commit, error) {
 
 func (g *GitService) getRepository(fs billy.Filesystem) (*git.Repository, error) {
 	return git.Clone(memory.NewStorage(), fs, &git.CloneOptions{
-		URL:           g.RepoURL,
-		ReferenceName: plumbing.NewBranchReferenceName(g.BranchName),
+		URL:           g.repoURL,
+		ReferenceName: plumbing.NewBranchReferenceName(g.branchName),
 		Auth:          g.getAuth(),
 	})
 }
 
 func (g *GitService) getAuth() *http.BasicAuth {
-	decryptedToken, err := utils.Decrypt(g.EncryptedToken, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+	decryptedToken, err := utils.Decrypt(g.encryptedToken, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 
 	if err != nil || decryptedToken == "" {
 		return nil
