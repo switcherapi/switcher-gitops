@@ -233,7 +233,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 		// Assert
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
-		assert.Equal(t, "{\"error\":\"Error deleting account: Account not found for domain.id: not-found\"}", response.Body.String())
+		assert.Equal(t, "{\"error\":\"Error deleting account: account not found\"}", response.Body.String())
 	})
 }
 

@@ -193,7 +193,7 @@ func TestDeleteAccount(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, err)
-		assert.Equal(t, "Account not found for id: non_existent_id", err.Error())
+		assert.Equal(t, "account not found", err.Error())
 	})
 
 	t.Run("Should delete an account by domain ID and environment", func(t *testing.T) {
@@ -215,6 +215,6 @@ func TestDeleteAccount(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, err)
-		assert.Equal(t, "Account not found for domain.id: non_existent_domain_id", err.Error())
+		assert.Equal(t, "account not found", err.Error())
 	})
 }

@@ -42,12 +42,12 @@ func (app *App) Start() error {
 
 	go func() {
 		if err := app.httpServer.ListenAndServe(); err != nil {
-			utils.Log(utils.LogLevelError, "Failed to listen and serve: %s", err.Error())
+			utils.LogError("Failed to listen and serve: %s", err.Error())
 			os.Exit(1)
 		}
 	}()
 
-	utils.Log(utils.LogLevelInfo, "Server started on port %s", port)
+	utils.LogInfo("Server started on port %s", port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Interrupt)

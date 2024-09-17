@@ -2,9 +2,9 @@ package utils
 
 import (
 	"os"
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
@@ -15,38 +15,34 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestLog(t *testing.T) {
-	Log(LogLevelInfo, "Test log")
-}
-
 func TestToJsonFromObject(t *testing.T) {
 	account := givenAccount(true)
 	actual := ToJsonFromObject(account)
-	AssertNotNil(t, actual)
+	assert.NotNil(t, actual)
 }
 
 func TestToMapFromObject(t *testing.T) {
 	account := givenAccount(true)
 	actual := ToMapFromObject(account)
-	AssertNotNil(t, actual)
+	assert.NotNil(t, actual)
 }
 
 func TestFormatJSON(t *testing.T) {
 	account := givenAccount(true)
 	accountJSON := ToJsonFromObject(account)
 	actual := FormatJSON(accountJSON)
-	AssertNotNil(t, actual)
+	assert.NotNil(t, actual)
 }
 
 func TestFormatJSONError(t *testing.T) {
 	actual := FormatJSON("invalid")
-	AssertNotNil(t, actual)
+	assert.NotNil(t, actual)
 }
 
 func TestReadJsonFileToObject(t *testing.T) {
 	json := ReadJsonFromFile("../../resources/fixtures/util/default.json")
-	AssertNotNil(t, json)
-	AssertContains(t, json, "Release 1")
+	assert.NotNil(t, json)
+	assert.Contains(t, json, "Release 1")
 }
 
 func TestEncrypDecrypt(t *testing.T) {
@@ -54,11 +50,11 @@ func TestEncrypDecrypt(t *testing.T) {
 	text := "github_pat_XXXXXXXXXXXXXXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 	encrypted := Encrypt(text, privatKey)
-	AssertNotNil(t, encrypted)
+	assert.NotNil(t, encrypted)
 
 	decrypted, err := Decrypt(encrypted, privatKey)
-	AssertNil(t, err)
-	AssertEqual(t, text, decrypted)
+	assert.Nil(t, err)
+	assert.Equal(t, text, decrypted)
 }
 
 func TestEncrypDecryptError(t *testing.T) {
@@ -66,11 +62,25 @@ func TestEncrypDecryptError(t *testing.T) {
 	text := "github_pat..."
 
 	encrypted := Encrypt(text, privatKey)
-	AssertNotNil(t, encrypted)
+	assert.NotNil(t, encrypted)
 
 	decrypted, err := Decrypt("invalid", privatKey)
-	AssertNotNil(t, err)
-	AssertEqual(t, "", decrypted)
+	assert.NotNil(t, err)
+	assert.Equal(t, "", decrypted)
+}
+
+func TestGetTimeWindow(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		actual, unit := GetTimeWindow("10m")
+		assert.NotNil(t, actual)
+		assert.NotNil(t, unit)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		actual, unit := GetTimeWindow("invalid")
+		assert.NotNil(t, actual)
+		assert.NotNil(t, unit)
+	})
 }
 
 // Fixtures
@@ -104,28 +114,4 @@ func GetDir() string {
 	}
 
 	return directory
-}
-
-func AssertNotNil(t *testing.T, object interface{}) {
-	if object == nil {
-		t.Errorf("Object is nil")
-	}
-}
-
-func AssertNil(t *testing.T, object interface{}) {
-	if object != nil {
-		t.Errorf("Object is not nil")
-	}
-}
-
-func AssertEqual(t *testing.T, actual interface{}, expected interface{}) {
-	if actual != expected {
-		t.Errorf("Expected %v, got %v", actual, expected)
-	}
-}
-
-func AssertContains(t *testing.T, actual string, expected string) {
-	if !strings.Contains(actual, expected) {
-		t.Errorf("Expected %v to contain %v", actual, expected)
-	}
 }

@@ -49,72 +49,6 @@ func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Accou
 	return account, nil
 }
 
-func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.Account, error) {
-	collection, ctx, cancel := getDbContext(repo)
-	defer cancel()
-
-	var account model.Account
-	objectId, _ := primitive.ObjectIDFromHex(accountId)
-	filter := bson.M{"_id": objectId}
-	err := collection.FindOne(ctx, filter).Decode(&account)
-	if err != nil {
-		return nil, err
-	}
-
-	return &account, nil
-}
-
-func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error) {
-	collection, ctx, cancel := getDbContext(repo)
-	defer cancel()
-
-	var account model.Account
-	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
-	err := collection.FindOne(ctx, filter).Decode(&account)
-	if err != nil {
-		return nil, err
-	}
-
-	return &account, nil
-}
-
-func (repo *AccountRepositoryMongo) FetchAllByDomainId(domainId string) []model.Account {
-	collection, ctx, cancel := getDbContext(repo)
-	defer cancel()
-
-	filter := primitive.M{domainIdFilter: domainId}
-	cursor, _ := collection.Find(ctx, filter)
-
-	var accounts []model.Account
-	for cursor.Next(ctx) {
-		var account model.Account
-		err := cursor.Decode(&account)
-		if err == nil {
-			accounts = append(accounts, account)
-		}
-	}
-
-	return accounts
-}
-
-func (repo *AccountRepositoryMongo) FetchAllAccounts() []model.Account {
-	collection, ctx, cancel := getDbContext(repo)
-	defer cancel()
-
-	cursor, _ := collection.Find(ctx, primitive.M{})
-
-	var accounts []model.Account
-	for cursor.Next(ctx) {
-		var account model.Account
-		err := cursor.Decode(&account)
-		if err == nil {
-			accounts = append(accounts, account)
-		}
-	}
-
-	return accounts
-}
-
 func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
@@ -134,33 +68,79 @@ func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Accou
 	return &updatedAccount, nil
 }
 
+func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.Account, error) {
+	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	filter := bson.M{"_id": objectId}
+	return repo.fetchOne(filter)
+}
+
+func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error) {
+	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
+	return repo.fetchOne(filter)
+}
+
+func (repo *AccountRepositoryMongo) FetchAllByDomainId(domainId string) []model.Account {
+	filter := primitive.M{domainIdFilter: domainId}
+	return repo.fetchMany(filter)
+}
+
+func (repo *AccountRepositoryMongo) FetchAllAccounts() []model.Account {
+	filter := bson.M{}
+	return repo.fetchMany(filter)
+}
+
 func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
+	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	filter := bson.M{"_id": objectId}
+	return repo.deleteOne(filter)
+}
+
+func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId string, environment string) error {
+	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
+	return repo.deleteOne(filter)
+}
+
+func (repo *AccountRepositoryMongo) deleteOne(filter primitive.M) error {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	objectId, _ := primitive.ObjectIDFromHex(accountId)
-	filter := bson.M{"_id": objectId}
 	result, err := collection.DeleteOne(ctx, filter)
-
 	if result.DeletedCount == 0 {
-		return errors.New("Account not found for id: " + accountId)
+		return errors.New("account not found")
 	}
 
 	return err
 }
 
-func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId string, environment string) error {
+func (repo *AccountRepositoryMongo) fetchMany(filter primitive.M) []model.Account {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
-	result, err := collection.DeleteOne(ctx, filter)
+	cursor, _ := collection.Find(ctx, filter)
 
-	if result.DeletedCount == 0 {
-		return errors.New("Account not found for domain.id: " + domainId)
+	var accounts []model.Account
+	for cursor.Next(ctx) {
+		var account model.Account
+		err := cursor.Decode(&account)
+		if err == nil {
+			accounts = append(accounts, account)
+		}
 	}
 
-	return err
+	return accounts
+}
+
+func (repo *AccountRepositoryMongo) fetchOne(filter primitive.M) (*model.Account, error) {
+	collection, ctx, cancel := getDbContext(repo)
+	defer cancel()
+
+	var account model.Account
+	err := collection.FindOne(ctx, filter).Decode(&account)
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
 }
 
 func getDbContext(repo *AccountRepositoryMongo) (*mongo.Collection, context.Context, context.CancelFunc) {
@@ -182,7 +162,7 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 
 	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error creating index for account (environment, domain.id): %s", err.Error())
+		utils.LogError("Error creating index for account (environment, domain.id): %s", err.Error())
 	}
 }
 

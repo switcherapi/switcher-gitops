@@ -55,7 +55,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 
 	accountCreated, err := controller.accountRepository.Create(&accountRequest)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error creating account: %s", err.Error())
+		utils.LogError("Error creating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error creating account"}, http.StatusInternalServerError)
 		return
 	}
@@ -73,7 +73,7 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 
 	account, err := controller.accountRepository.FetchByDomainIdEnvironment(domainId, enviroment)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error fetching account: %s", err.Error())
+		utils.LogError("Error fetching account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Account not found"}, http.StatusNotFound)
 		return
 	}
@@ -86,7 +86,7 @@ func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.Re
 
 	accounts := controller.accountRepository.FetchAllByDomainId(domainId)
 	if accounts == nil {
-		utils.Log(utils.LogLevelError, "Not found accounts for domain: %s", domainId)
+		utils.LogError("Not found accounts for domain: %s", domainId)
 		utils.ResponseJSON(w, ErrorResponse{Error: "Not found accounts for domain: " + domainId}, http.StatusNotFound)
 		return
 	}
@@ -98,7 +98,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
+		utils.LogError("Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
 		return
 	}
@@ -110,7 +110,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 
 	accountUpdated, err := controller.accountRepository.Update(&accountRequest)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error updating account: %s", err.Error())
+		utils.LogError("Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error updating account"}, http.StatusInternalServerError)
 		return
 	}
@@ -124,7 +124,7 @@ func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter,
 
 	err := controller.accountRepository.DeleteByDomainIdEnvironment(domainId, enviroment)
 	if err != nil {
-		utils.Log(utils.LogLevelError, "Error deleting account: %s", err.Error())
+		utils.LogError("Error deleting account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error deleting account: " + err.Error()}, http.StatusInternalServerError)
 		return
 	}
