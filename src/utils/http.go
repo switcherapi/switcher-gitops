@@ -11,7 +11,7 @@ func ResponseJSON(w http.ResponseWriter, data interface{}, status int) {
 
 	encodedData, err := json.Marshal(data)
 	if err != nil {
-		Log(LogLevelError, "Error encoding JSON: %s", err.Error())
+		LogError("Error encoding JSON: %s", err.Error())
 		return
 	}
 
