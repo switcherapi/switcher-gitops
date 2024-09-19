@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -24,7 +23,8 @@ type CoreHandler struct {
 	Status            int
 }
 
-func NewCoreHandler(accountRepository repository.AccountRepository, apiService IAPIService, comparatorService IComparatorService) *CoreHandler {
+func NewCoreHandler(accountRepository repository.AccountRepository, apiService IAPIService,
+	comparatorService IComparatorService) *CoreHandler {
 	timeWindow, unitWindow := utils.GetTimeWindow(config.GetEnv("HANDLER_WAITING_TIME"))
 	waitingTime := time.Duration(timeWindow) * unitWindow
 
@@ -78,10 +78,8 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 
 		// Wait for account to be active
 		if !account.Settings.Active {
-			utils.LogInfo("[%s - %s (%s)] Account is not active, waiting for activation",
-				accountId, account.Domain.Name, account.Environment)
-
-			c.updateDomainStatus(*account, model.StatusPending, "Account was deactivated")
+			c.updateDomainStatus(*account, model.StatusPending, "Account was deactivated",
+				utils.LogLevelInfo)
 			time.Sleep(time.Duration(c.waitingTime))
 			continue
 		}
@@ -93,10 +91,8 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		repositoryData, err := gitService.GetRepositoryData(account.Environment)
 
 		if err != nil {
-			utils.LogError("[%s - %s (%s)] Failed to fetch repository data - %s",
-				accountId, account.Domain.Name, account.Environment, err.Error())
-
-			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error())
+			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error(),
+				utils.LogLevelError)
 			time.Sleep(time.Duration(c.waitingTime))
 			continue
 		}
@@ -105,10 +101,8 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		snapshotVersionPayload, err := c.apiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
 
 		if err != nil {
-			utils.LogError("[%s - %s (%s)] Failed to fetch snapshot version - %s",
-				accountId, account.Domain.Name, account.Environment, err.Error())
-
-			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error())
+			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error(),
+				utils.LogLevelError)
 			time.Sleep(time.Duration(c.waitingTime))
 			continue
 		}
@@ -125,37 +119,31 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 }
 
 func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.RepositoryData, gitService IGitService) {
-	utils.LogInfo("[%s - %s (%s)] Syncing up", account.ID.Hex(), account.Domain.Name, account.Environment)
-
 	// Update account status: Out of sync
 	account.Domain.LastCommit = repositoryData.CommitHash
 	account.Domain.LastDate = repositoryData.CommitDate
-	c.updateDomainStatus(account, model.StatusOutSync, model.MessageSyncingUp)
+	c.updateDomainStatus(account, model.StatusOutSync, model.MessageSyncingUp, utils.LogLevelInfo)
 
 	// Check for changes
 	diff, snapshotApi, err := c.checkForChanges(account, repositoryData.Content)
 
 	if err != nil {
-		utils.LogError("[%s - %s (%s)] Failed to check for changes - %s",
-			account.ID.Hex(), account.Domain.Name, account.Environment, err.Error())
-
-		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes - "+err.Error())
+		c.updateDomainStatus(account, model.StatusError, "Failed to check for changes - "+err.Error(),
+			utils.LogLevelError)
 		return
 	}
 
-	// Apply changes
-	changeSource, account, err := c.applyChanges(snapshotApi, account, repositoryData, diff, gitService)
+	// Push changes
+	changeSource, account, err := c.pushChanges(snapshotApi, account, repositoryData, diff, gitService)
 
 	if err != nil {
-		utils.LogError("[%s - %s (%s)] Failed to apply changes [%s] - %s",
-			account.ID.Hex(), account.Domain.Name, account.Environment, changeSource, err.Error())
-
-		c.updateDomainStatus(account, model.StatusError, "Failed to apply changes ["+changeSource+"] - "+err.Error())
+		c.updateDomainStatus(account, model.StatusError, "Failed to push changes ["+changeSource+"] - "+err.Error(),
+			utils.LogLevelError)
 		return
 	}
 
 	// Update account status: Synced
-	c.updateDomainStatus(account, model.StatusSynced, model.MessageSynced)
+	c.updateDomainStatus(account, model.StatusSynced, model.MessageSynced, utils.LogLevelInfo)
 }
 
 func (c *CoreHandler) checkForChanges(account model.Account, content string) (model.DiffResult, model.Snapshot, error) {
@@ -182,18 +170,15 @@ func (c *CoreHandler) checkForChanges(account model.Account, content string) (mo
 	return c.comparatorService.MergeResults([]model.DiffResult{diffNew, diffChanged, diffDeleted}), snapshotApi.Snapshot, nil
 }
 
-func (c *CoreHandler) applyChanges(snapshotApi model.Snapshot, account model.Account,
+func (c *CoreHandler) pushChanges(snapshotApi model.Snapshot, account model.Account,
 	repositoryData *model.RepositoryData, diff model.DiffResult, gitService IGitService) (string, model.Account, error) {
-	utils.LogDebug("[%s - %s (%s)] SnapshotAPI version: %s - SnapshotRepo version: %s",
-		account.ID.Hex(), account.Domain.Name, account.Environment, fmt.Sprint(snapshotApi.Domain.Version), fmt.Sprint(account.Domain.Version))
-
 	err := error(nil)
 
 	changeSource := ""
 	if snapshotApi.Domain.Version > account.Domain.Version {
 		changeSource = "Repository"
 		if c.isRepositoryOutSync(repositoryData, diff) {
-			account, err = c.applyChangesToRepository(account, snapshotApi, gitService)
+			account, err = c.pushChangesToRepository(account, snapshotApi, gitService)
 		} else {
 			utils.LogInfo("[%s - %s (%s)] Repository is up to date",
 				account.ID.Hex(), account.Domain.Name, account.Environment)
@@ -202,36 +187,45 @@ func (c *CoreHandler) applyChanges(snapshotApi model.Snapshot, account model.Acc
 		}
 	} else if len(diff.Changes) > 0 {
 		changeSource = "API"
-		account = c.applyChangesToAPI(account, repositoryData, diff)
+		account, err = c.pushChangesToAPI(account, repositoryData, diff)
 	}
 
 	return changeSource, account, err
 }
 
-func (c *CoreHandler) applyChangesToAPI(account model.Account, repositoryData *model.RepositoryData, diff model.DiffResult) model.Account {
-	utils.LogInfo("[%s - %s (%s)] Pushing changes to API", account.ID.Hex(), account.Domain.Name, account.Environment)
+func (c *CoreHandler) pushChangesToAPI(account model.Account,
+	repositoryData *model.RepositoryData, diff model.DiffResult) (model.Account, error) {
+	utils.LogInfo("[%s - %s (%s)] Pushing changes to API (prune: %t)", account.ID.Hex(), account.Domain.Name,
+		account.Environment, account.Settings.ForcePrune)
 
 	// Removed deleted if force prune is disabled
 	if !account.Settings.ForcePrune {
-		c.comparatorService.RemoveDeleted(diff)
+		diff = c.comparatorService.RemoveDeleted(diff)
 	}
 
 	// Push changes to API
+	apiResponse, err := c.apiService.PushChanges(account.Domain.ID, account.Environment, diff)
+
+	if err != nil {
+		return account, err
+	}
 
 	// Update domain
-	account.Domain.Version = 2
+	account.Domain.Version = apiResponse.Version
 	account.Domain.LastCommit = repositoryData.CommitHash
 
-	return account
+	return account, nil
 }
 
-func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot model.Snapshot, gitService IGitService) (model.Account, error) {
+func (c *CoreHandler) pushChangesToRepository(account model.Account, snapshot model.Snapshot,
+	gitService IGitService) (model.Account, error) {
 	utils.LogInfo("[%s - %s (%s)] Pushing changes to repository", account.ID.Hex(), account.Domain.Name, account.Environment)
 
 	// Remove version from domain
 	snapshotContent := snapshot
 	snapshotContent.Domain.Version = 0
 
+	// Push changes to repository
 	lastCommit, err := gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
 
 	if err != nil {
@@ -248,8 +242,9 @@ func (c *CoreHandler) applyChangesToRepository(account model.Account, snapshot m
 func (c *CoreHandler) isOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
 	snapshotVersion := c.apiService.NewDataFromJson([]byte(snapshotVersionPayload)).Snapshot.Domain.Version
 
-	utils.LogDebug("[%s - %s (%s)] Checking account - Last commit: %s - Domain Version: %d - Snapshot Version: %d",
-		account.ID.Hex(), account.Domain.Name, account.Environment, account.Domain.LastCommit, account.Domain.Version, snapshotVersion)
+	utils.LogDebug("[%s - %s (%s)] Checking account - Last commit: %s - GitOps Version: %d - API Version: %d",
+		account.ID.Hex(), account.Domain.Name, account.Environment, account.Domain.LastCommit,
+		account.Domain.Version, snapshotVersion)
 
 	return account.Domain.LastCommit == "" || // First sync
 		account.Domain.LastCommit != lastCommit || // Repository out of sync
@@ -261,7 +256,9 @@ func (c *CoreHandler) isRepositoryOutSync(repositoryData *model.RepositoryData, 
 		len(diff.Changes) > 0 // Changes detected
 }
 
-func (c *CoreHandler) updateDomainStatus(account model.Account, status string, message string) {
+func (c *CoreHandler) updateDomainStatus(account model.Account, status string, message string, logLevel string) {
+	utils.Log(logLevel, "[%s - %s (%s)] %s", account.ID.Hex(), account.Domain.Name, account.Environment, message)
+
 	account.Domain.Status = status
 	account.Domain.Message = message
 	account.Domain.LastDate = time.Now().Format(time.ANSIC)

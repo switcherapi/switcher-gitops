@@ -113,8 +113,8 @@ func TestFetchSnapshot(t *testing.T) {
 	})
 }
 
-func TestApplyChangesToAPI(t *testing.T) {
-	t.Run("Should apply changes to API", func(t *testing.T) {
+func TestPushChangesToAPI(t *testing.T) {
+	t.Run("Should push changes to API", func(t *testing.T) {
 		// Given
 		diff := givenDiffResult()
 		fakeApiServer := givenApiResponse(http.StatusOK, `{ 
@@ -126,7 +126,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
 
 		// Test
-		response, _ := apiService.ApplyChangesToAPI("domainId", "default", diff)
+		response, _ := apiService.PushChanges("domainId", "default", diff)
 
 		// Assert
 		assert.NotNil(t, response)
@@ -143,7 +143,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL)
 
 		// Test
-		response, _ := apiService.ApplyChangesToAPI("domainId", "default", diff)
+		response, _ := apiService.PushChanges("domainId", "default", diff)
 
 		// Assert
 		assert.NotNil(t, response)
@@ -156,7 +156,7 @@ func TestApplyChangesToAPI(t *testing.T) {
 		apiService := NewApiService("[SWITCHER_API_JWT_SECRET]", "http://localhost:8080")
 
 		// Test
-		_, err := apiService.ApplyChangesToAPI("domainId", "default", diff)
+		_, err := apiService.PushChanges("domainId", "default", diff)
 
 		// Assert
 		assert.NotNil(t, err)

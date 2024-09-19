@@ -16,7 +16,7 @@ type GraphQLRequest struct {
 	Query string `json:"query"`
 }
 
-type ApplyChangeResponse struct {
+type PushChangeResponse struct {
 	Message string `json:"message"`
 	Version int    `json:"version"`
 }
@@ -24,7 +24,7 @@ type ApplyChangeResponse struct {
 type IAPIService interface {
 	FetchSnapshotVersion(domainId string, environment string) (string, error)
 	FetchSnapshot(domainId string, environment string) (string, error)
-	ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error)
+	PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error)
 	NewDataFromJson(jsonData []byte) model.Data
 }
 
@@ -68,15 +68,15 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 	return responseBody, nil
 }
 
-func (a *ApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
+func (a *ApiService) PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error) {
 	reqBody, _ := json.Marshal(diff)
-	responseBody, err := a.doPostRequest(a.apiUrl+"/gitops/apply", domainId, reqBody)
+	responseBody, err := a.doPostRequest(a.apiUrl+"/gitops/push", domainId, reqBody)
 
 	if err != nil {
-		return ApplyChangeResponse{}, err
+		return PushChangeResponse{}, err
 	}
 
-	var response ApplyChangeResponse
+	var response PushChangeResponse
 	json.Unmarshal([]byte(responseBody), &response)
 	return response, nil
 }
