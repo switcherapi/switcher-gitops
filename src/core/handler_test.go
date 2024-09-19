@@ -60,7 +60,209 @@ func TestInitCoreHandlerGoroutine(t *testing.T) {
 	})
 }
 
-func TestStartAccountHandler(t *testing.T) {
+func TestAccountHandlerSyncRepository(t *testing.T) {
+	t.Run("Should sync successfully when API has a newer version", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.lastCommit = "111"
+
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-newer-version"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync successfully when repository is out of sync", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-out-sync"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync successfully when repository is up to date but not synced", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": [{
+					"name": "Release 1",
+					"description": "Showcase configuration",
+					"activated": true,
+					"config": [{
+						"key": "MY_SWITCHER",
+						"description": "",
+						"activated": true,
+						"strategies": [],
+						"components": [
+							"switcher-playground"
+						]
+					}]
+				}]
+			}
+		}`
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-up-to-date-not-synced"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+}
+
+func TestAccountHandlerSyncAPI(t *testing.T) {
+	t.Run("Should sync API when repository has new changes", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-sync-api"
+		account.Domain.Version = 1
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 100, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync and prune successfully when API is out of sync", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": []
+			}
+		}`
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-out-sync-prune"
+		account.Domain.Version = 1
+		account.Settings.ForcePrune = true
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 100, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync and not prune when API is out of sync", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": []
+			}
+		}`
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-out-sync-not-prune"
+		account.Domain.Version = 1
+		account.Settings.ForcePrune = false
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 100, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+}
+
+func TestAccountHandlerNotSync(t *testing.T) {
 	t.Run("Should not sync when account is not active", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -158,175 +360,6 @@ func TestStartAccountHandler(t *testing.T) {
 		tearDown()
 	})
 
-	t.Run("Should sync successfully when repository is out of sync", func(t *testing.T) {
-		// Given
-		fakeGitService := NewFakeGitService()
-		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
-
-		account := givenAccount()
-		account.Domain.ID = "123-out-sync"
-		accountCreated, _ := coreHandler.accountRepository.Create(&account)
-
-		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
-
-		// Wait for goroutine to process
-		time.Sleep(1 * time.Second)
-
-		// Assert
-		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
-		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
-		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, 1, accountFromDb.Domain.Version)
-		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
-
-		tearDown()
-	})
-
-	t.Run("Should sync successfully when repository is up to date but not synced", func(t *testing.T) {
-		// Given
-		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
-			"domain": {
-				"group": [{
-					"name": "Release 1",
-					"description": "Showcase configuration",
-					"activated": true,
-					"config": [{
-						"key": "MY_SWITCHER",
-						"description": "",
-						"activated": true,
-						"strategies": [],
-						"components": [
-							"switcher-playground"
-						]
-					}]
-				}]
-			}
-		}`
-		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
-
-		account := givenAccount()
-		account.Domain.ID = "123-up-to-date-not-synced"
-		accountCreated, _ := coreHandler.accountRepository.Create(&account)
-
-		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
-
-		// Wait for goroutine to process
-		time.Sleep(1 * time.Second)
-
-		// Assert
-		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
-		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
-		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, 1, accountFromDb.Domain.Version)
-		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
-
-		tearDown()
-	})
-
-	t.Run("Should sync and prune successfully when repository is out of sync", func(t *testing.T) {
-		// Given
-		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
-			"domain": {
-				"group": []
-			}
-		}`
-		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
-
-		account := givenAccount()
-		account.Domain.ID = "123-out-sync-prune"
-		account.Domain.Version = 1
-		account.Settings.ForcePrune = true
-		accountCreated, _ := coreHandler.accountRepository.Create(&account)
-
-		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
-
-		// Wait for goroutine to process
-		time.Sleep(1 * time.Second)
-
-		// Assert
-		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
-		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
-		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, 2, accountFromDb.Domain.Version)
-		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
-
-		tearDown()
-	})
-
-	t.Run("Should sync and not prune when repository is out of sync", func(t *testing.T) {
-		// Given
-		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
-			"domain": {
-				"group": []
-			}
-		}`
-		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
-
-		account := givenAccount()
-		account.Domain.ID = "123-out-sync-not-prune"
-		account.Domain.Version = 1
-		account.Settings.ForcePrune = false
-		accountCreated, _ := coreHandler.accountRepository.Create(&account)
-
-		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
-
-		// Wait for goroutine to process
-		time.Sleep(1 * time.Second)
-
-		// Assert
-		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
-		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
-		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, 2, accountFromDb.Domain.Version)
-		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
-
-		tearDown()
-	})
-
-	t.Run("Should sync successfully when API has a newer version", func(t *testing.T) {
-		// Given
-		fakeGitService := NewFakeGitService()
-		fakeGitService.lastCommit = "111"
-
-		fakeApiService := NewFakeApiService()
-		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
-
-		account := givenAccount()
-		account.Domain.ID = "123-newer-version"
-		accountCreated, _ := coreHandler.accountRepository.Create(&account)
-
-		// Test
-		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
-
-		// Wait for goroutine to process
-		time.Sleep(1 * time.Second)
-
-		// Assert
-		accountFromDb, _ := coreHandler.accountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
-		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
-		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
-		assert.Equal(t, "111", accountFromDb.Domain.LastCommit)
-		assert.Equal(t, 1, accountFromDb.Domain.Version)
-		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
-
-		tearDown()
-	})
-
 	t.Run("Should not sync when API returns an error", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -377,7 +410,36 @@ func TestStartAccountHandler(t *testing.T) {
 		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "authorization failed")
-		assert.Contains(t, accountFromDb.Domain.Message, "Failed to apply changes [Repository]")
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to push changes [Repository]")
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should not sync when API returns an error while pushing changes", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		fakeApiService.throwErrorPush = true
+
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-api-error-push"
+		account.Domain.Version = 1
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to push changes")
 		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
 		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
@@ -456,14 +518,21 @@ func (f *FakeGitService) UpdateRepositorySettings(repository string, token strin
 type FakeApiService struct {
 	throwErrorVersion  bool
 	throwErrorSnapshot bool
+	throwErrorPush     bool
 	responseVersion    string
 	responseSnapshot   string
+	pushChanges        PushChangeResponse
 }
 
 func NewFakeApiService() *FakeApiService {
 	return &FakeApiService{
 		throwErrorVersion:  false,
 		throwErrorSnapshot: false,
+		throwErrorPush:     false,
+		pushChanges: PushChangeResponse{
+			Message: "Changes applied successfully",
+			Version: 100,
+		},
 		responseVersion: `{
 			"data": {
 				"domain": {
@@ -498,7 +567,7 @@ func NewFakeApiService() *FakeApiService {
 
 func (f *FakeApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
 	if f.throwErrorVersion {
-		return "", errors.New("Something went wrong")
+		return "", errors.New("something went wrong")
 	}
 
 	return f.responseVersion, nil
@@ -506,14 +575,18 @@ func (f *FakeApiService) FetchSnapshotVersion(domainId string, environment strin
 
 func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (string, error) {
 	if f.throwErrorSnapshot {
-		return "", errors.New("Something went wrong")
+		return "", errors.New("something went wrong")
 	}
 
 	return f.responseSnapshot, nil
 }
 
-func (f *FakeApiService) ApplyChangesToAPI(domainId string, environment string, diff model.DiffResult) (ApplyChangeResponse, error) {
-	return ApplyChangeResponse{}, nil
+func (f *FakeApiService) PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error) {
+	if f.throwErrorPush {
+		return PushChangeResponse{}, errors.New("something went wrong")
+	}
+
+	return f.pushChanges, nil
 }
 
 func (f *FakeApiService) NewDataFromJson(jsonData []byte) model.Data {
