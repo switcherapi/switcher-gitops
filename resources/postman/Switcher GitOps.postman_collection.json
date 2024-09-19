@@ -1,0 +1,162 @@
+{
+	"info": {
+		"_postman_id": "6afb9a95-7d53-445a-840c-49fa667baee1",
+		"name": "Switcher GitOps",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "9436108"
+	},
+	"item": [
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"token\": \"{{github_pat}}\",\r\n\t\"branch\": \"main\",\r\n    \"environment\": \"default\",\r\n\t\"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n\t\t\"name\": \"GitOps\"\r\n\t},\r\n\t\"settings\": {\r\n\t\t\"active\": true,\r\n\t\t\"window\": \"30s\",\r\n\t\t\"forceprune\": false\r\n\t}\t\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n    \"branch\": \"main\",\r\n    \"environment\": \"default\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": false\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch All By Domain Id",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account/{{domain_id}}",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account",
+								"{{domain_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch By Domain Id / Env",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/account/{{domain_id}}/default",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account",
+								"{{domain_id}}",
+								"default"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete By Domain Id / Env",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account/{{domain_id}}/default",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account",
+								"{{domain_id}}",
+								"default"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "API Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/api/check",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"check"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
