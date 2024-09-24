@@ -581,7 +581,7 @@ func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (str
 	return f.responseSnapshot, nil
 }
 
-func (f *FakeApiService) PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error) {
+func (f *FakeApiService) PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error) {
 	if f.throwErrorPush {
 		return PushChangeResponse{}, errors.New("something went wrong")
 	}

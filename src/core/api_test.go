@@ -116,7 +116,7 @@ func TestFetchSnapshot(t *testing.T) {
 func TestPushChangesToAPI(t *testing.T) {
 	t.Run("Should push changes to API", func(t *testing.T) {
 		// Given
-		diff := givenDiffResult()
+		diff := givenDiffResult("default")
 		fakeApiServer := givenApiResponse(http.StatusOK, `{ 
 			"version": 2, 
 			"message": "Changes applied successfully" 
@@ -126,7 +126,7 @@ func TestPushChangesToAPI(t *testing.T) {
 		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
 
 		// Test
-		response, _ := apiService.PushChanges("domainId", "default", diff)
+		response, _ := apiService.PushChanges("domainId", diff)
 
 		// Assert
 		assert.NotNil(t, response)
@@ -136,14 +136,14 @@ func TestPushChangesToAPI(t *testing.T) {
 
 	t.Run("Should return error - invalid API key", func(t *testing.T) {
 		// Given
-		diff := givenDiffResult()
+		diff := givenDiffResult("default")
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "message": "Invalid API token" }`)
 		defer fakeApiServer.Close()
 
 		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL)
 
 		// Test
-		response, _ := apiService.PushChanges("domainId", "default", diff)
+		response, _ := apiService.PushChanges("domainId", diff)
 
 		// Assert
 		assert.NotNil(t, response)
@@ -152,11 +152,11 @@ func TestPushChangesToAPI(t *testing.T) {
 
 	t.Run("Should return error - API not accessible", func(t *testing.T) {
 		// Given
-		diff := givenDiffResult()
+		diff := givenDiffResult("default")
 		apiService := NewApiService("[SWITCHER_API_JWT_SECRET]", "http://localhost:8080")
 
 		// Test
-		_, err := apiService.PushChanges("domainId", "default", diff)
+		_, err := apiService.PushChanges("domainId", diff)
 
 		// Assert
 		assert.NotNil(t, err)
@@ -165,8 +165,9 @@ func TestPushChangesToAPI(t *testing.T) {
 
 // Helpers
 
-func givenDiffResult() model.DiffResult {
+func givenDiffResult(environment string) model.DiffResult {
 	diffResult := model.DiffResult{}
+	diffResult.Environment = environment
 	diffResult.Changes = append(diffResult.Changes, model.DiffDetails{
 		Action:  string(NEW),
 		Diff:    string(CONFIG),

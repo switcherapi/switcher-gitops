@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
@@ -24,7 +25,7 @@ type PushChangeResponse struct {
 type IAPIService interface {
 	FetchSnapshotVersion(domainId string, environment string) (string, error)
 	FetchSnapshot(domainId string, environment string) (string, error)
-	PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error)
+	PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error)
 	NewDataFromJson(jsonData []byte) model.Data
 }
 
@@ -68,9 +69,9 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 	return responseBody, nil
 }
 
-func (a *ApiService) PushChanges(domainId string, environment string, diff model.DiffResult) (PushChangeResponse, error) {
+func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error) {
 	reqBody, _ := json.Marshal(diff)
-	responseBody, err := a.doPostRequest(a.apiUrl+"/gitops/push", domainId, reqBody)
+	responseBody, err := a.doPostRequest(a.apiUrl+config.GetEnv("SWITCHER_PATH_PUSH"), domainId, reqBody)
 
 	if err != nil {
 		return PushChangeResponse{}, err
@@ -87,7 +88,7 @@ func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, er
 
 	// Create a new request
 	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
-	req, _ := http.NewRequest("POST", a.apiUrl+"/gitops-graphql", bytes.NewBuffer(reqBody))
+	req, _ := http.NewRequest("POST", a.apiUrl+config.GetEnv("SWITCHER_PATH_GRAPHQL"), bytes.NewBuffer(reqBody))
 
 	// Set the request headers
 	setHeaders(req, token)

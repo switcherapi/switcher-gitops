@@ -1,7 +1,8 @@
 package model
 
 type DiffResult struct {
-	Changes []DiffDetails `json:"changes"`
+	Environment string        `json:"environment,omitempty"`
+	Changes     []DiffDetails `json:"changes"`
 }
 
 type DiffDetails struct {

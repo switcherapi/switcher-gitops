@@ -204,7 +204,8 @@ func (c *CoreHandler) pushChangesToAPI(account model.Account,
 	}
 
 	// Push changes to API
-	apiResponse, err := c.apiService.PushChanges(account.Domain.ID, account.Environment, diff)
+	diff.Environment = account.Environment
+	apiResponse, err := c.apiService.PushChanges(account.Domain.ID, diff)
 
 	if err != nil {
 		return account, err
