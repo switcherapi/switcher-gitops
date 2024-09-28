@@ -198,6 +198,36 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
+	t.Run("Should return changes in config - missing description assume not changed", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_config_missing_description.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "CHANGED",
+				"diff": "CONFIG",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_1"
+				],
+				"content": {
+					"activated": false
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
 	t.Run("Should return changes in config after calling RemoveDeleted", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
@@ -362,6 +392,37 @@ func TestCheckStrategySnapshot(t *testing.T) {
 				],
 				"content": {
 					"activated": true
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
+	t.Run("Should return changes in strategy - missing activated assume is changed", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_strategy_missing_activated.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "CHANGED",
+				"diff": "STRATEGY",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_1",
+					"VALUE_VALIDATION"
+				],
+				"content": {
+					"activated": false
 				}
 			}
 		]}`, utils.ToJsonFromObject(actual))
