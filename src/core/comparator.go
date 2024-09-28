@@ -200,15 +200,24 @@ func checkComponentsDiff(leftConfig model.Config, rightConfig model.Config, left
 }
 
 func compareAndUpdateBool(left *bool, right *bool, diffFound bool, modelDiffFound **bool) bool {
-	if *left != *right {
+	// Bool are required and will assume right is equal to left if right is nil
+	// E.g. when Respository (right) has not been set, it will assume the value from the left (API)
+	if right == nil {
+		right = new(bool)
+		*right = *left
+		diffFound = true
+		*modelDiffFound = right
+	} else if *left != *right {
 		diffFound = true
 		*modelDiffFound = right
 	}
+
 	return diffFound
 }
 
 func compareAndUpdateString(left string, right string, diffFound bool, modelDiffFound *string) bool {
-	if left != right {
+	// Strings are optional and will only evaluate if right is not empty
+	if right != "" && left != right {
 		diffFound = true
 		*modelDiffFound = right
 	}
