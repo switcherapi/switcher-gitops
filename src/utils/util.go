@@ -35,6 +35,11 @@ func ReadJsonFromFile(path string) string {
 	return string(bs)
 }
 
+func IsJsonValid(jsonString string, obj interface{}) bool {
+	err := json.Unmarshal([]byte(jsonString), &obj)
+	return err == nil
+}
+
 func ToJsonFromObject(object interface{}) string {
 	json, _ := json.MarshalIndent(object, "", "  ")
 	return string(json)

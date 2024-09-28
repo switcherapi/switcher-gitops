@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,6 +20,7 @@ type GraphQLRequest struct {
 
 type PushChangeResponse struct {
 	Message string `json:"message"`
+	Error   string `json:"error"`
 	Version int    `json:"version"`
 }
 
@@ -71,7 +73,7 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 
 func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error) {
 	reqBody, _ := json.Marshal(diff)
-	responseBody, err := a.doPostRequest(a.apiUrl+config.GetEnv("SWITCHER_PATH_PUSH"), domainId, reqBody)
+	responseBody, status, err := a.doPostRequest(a.apiUrl+config.GetEnv("SWITCHER_PATH_PUSH"), domainId, reqBody)
 
 	if err != nil {
 		return PushChangeResponse{}, err
@@ -79,6 +81,11 @@ func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushCh
 
 	var response PushChangeResponse
 	json.Unmarshal([]byte(responseBody), &response)
+
+	if status != http.StatusOK {
+		return PushChangeResponse{}, errors.New(response.Error)
+	}
+
 	return response, nil
 }
 
@@ -105,7 +112,7 @@ func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, er
 	return string(responseBody), nil
 }
 
-func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (string, error) {
+func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (string, int, error) {
 	// Generate a bearer token
 	token := generateBearerToken(a.apiKey, domainId)
 
@@ -119,12 +126,12 @@ func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (st
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer resp.Body.Close()
 
 	responseBody, _ := io.ReadAll(resp.Body)
-	return string(responseBody), nil
+	return string(responseBody), resp.StatusCode, nil
 }
 
 func generateBearerToken(apiKey string, subject string) string {

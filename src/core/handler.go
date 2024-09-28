@@ -97,6 +97,12 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 			continue
 		}
 
+		if !utils.IsJsonValid(repositoryData.Content, &model.Snapshot{}) {
+			c.updateDomainStatus(*account, model.StatusError, "Invalid JSON content", utils.LogLevelError)
+			time.Sleep(time.Duration(c.waitingTime))
+			continue
+		}
+
 		// Fetch snapshot version from API
 		snapshotVersionPayload, err := c.apiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
 
@@ -249,7 +255,8 @@ func (c *CoreHandler) isOutSync(account model.Account, lastCommit string, snapsh
 
 	return account.Domain.LastCommit == "" || // First sync
 		account.Domain.LastCommit != lastCommit || // Repository out of sync
-		account.Domain.Version != snapshotVersion // API out of sync
+		account.Domain.Version != snapshotVersion || // API out of sync
+		account.Domain.Status != model.StatusSynced // Account out of sync
 }
 
 func (c *CoreHandler) isRepositoryOutSync(repositoryData *model.RepositoryData, diff model.DiffResult) bool {
