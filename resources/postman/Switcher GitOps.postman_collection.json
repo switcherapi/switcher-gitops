@@ -16,7 +16,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"token\": \"{{github_pat}}\",\r\n\t\"branch\": \"main\",\r\n    \"environment\": \"default\",\r\n\t\"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n\t\t\"name\": \"GitOps\"\r\n\t},\r\n\t\"settings\": {\r\n\t\t\"active\": true,\r\n\t\t\"window\": \"30s\",\r\n\t\t\"forceprune\": false\r\n\t}\t\r\n}",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"token\": \"{{github_pat}}\",\r\n\t\"branch\": \"{{github_branch}}\",\r\n    \"environment\": \"{{environment}}\",\r\n\t\"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n\t\t\"name\": \"GitOps\"\r\n\t},\r\n\t\"settings\": {\r\n\t\t\"active\": true,\r\n\t\t\"window\": \"30s\",\r\n\t\t\"forceprune\": true\r\n\t}\t\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -42,7 +42,59 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n    \"branch\": \"main\",\r\n    \"environment\": \"default\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": false\r\n    }\r\n}",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"branch\": \"{{github_branch}}\",\r\n    \"environment\": \"{{environment}}\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": true\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update (token)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n    \"token\": \"{{github_pat}}\",\r\n\t\"branch\": \"{{github_branch}}\",\r\n    \"environment\": \"{{environment}}\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": true\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update (force sync)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"branch\": \"{{github_branch}}\",\r\n    \"environment\": \"{{environment}}\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\",\r\n        \"lastcommit\": \"refresh\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": true\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -97,14 +149,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{url}}/account/{{domain_id}}/default",
+							"raw": "{{url}}/account/{{domain_id}}/{{environment}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"account",
 								"{{domain_id}}",
-								"default"
+								"{{environment}}"
 							]
 						}
 					},
@@ -125,14 +177,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/account/{{domain_id}}/default",
+							"raw": "{{url}}/account/{{domain_id}}/{{environment}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
 								"account",
 								"{{domain_id}}",
-								"default"
+								"{{environment}}"
 							]
 						}
 					},

@@ -134,20 +134,37 @@ func TestPushChangesToAPI(t *testing.T) {
 		assert.Equal(t, "Changes applied successfully", response.Message)
 	})
 
-	t.Run("Should return error - invalid API key", func(t *testing.T) {
+	t.Run("Should return error - invalid payload (400)", func(t *testing.T) {
 		// Given
 		diff := givenDiffResult("default")
-		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "message": "Invalid API token" }`)
+		fakeApiServer := givenApiResponse(http.StatusBadRequest, `{ "error": "Config already exists" }`)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+
+		// Test
+		_, err := apiService.PushChanges("domainId", diff)
+
+		// Assert
+		assert.NotNil(t, err)
+		assert.Equal(t, "Config already exists", err.Error())
+
+	})
+
+	t.Run("Should return error - invalid API key (401)", func(t *testing.T) {
+		// Given
+		diff := givenDiffResult("default")
+		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "error": "Invalid API token" }`)
 		defer fakeApiServer.Close()
 
 		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL)
 
 		// Test
-		response, _ := apiService.PushChanges("domainId", diff)
+		_, err := apiService.PushChanges("domainId", diff)
 
 		// Assert
-		assert.NotNil(t, response)
-		assert.Contains(t, response.Message, "Invalid API token")
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "Invalid API token")
 	})
 
 	t.Run("Should return error - API not accessible", func(t *testing.T) {

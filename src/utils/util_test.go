@@ -28,15 +28,45 @@ func TestToMapFromObject(t *testing.T) {
 }
 
 func TestFormatJSON(t *testing.T) {
-	account := givenAccount(true)
-	accountJSON := ToJsonFromObject(account)
-	actual := FormatJSON(accountJSON)
-	assert.NotNil(t, actual)
+	t.Run("valid", func(t *testing.T) {
+		account := givenAccount(true)
+		accountJSON := ToJsonFromObject(account)
+		actual := FormatJSON(accountJSON)
+		assert.NotNil(t, actual)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		actual := FormatJSON("invalid")
+		assert.NotNil(t, actual)
+	})
 }
 
-func TestFormatJSONError(t *testing.T) {
-	actual := FormatJSON("invalid")
-	assert.NotNil(t, actual)
+func TestIsValidJson(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		invalidJson := `{
+			"domain": {
+				"group": [{
+					"name": "Hi There",
+					"activated": true
+				}]
+			}
+		}`
+
+		assert.True(t, IsJsonValid(invalidJson, model.Snapshot{}))
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		invalidJson := `{
+			"domain": {
+				"group": [{
+					"name": "Hi There",
+					"activated": true
+				}]
+			}
+		`
+
+		assert.False(t, IsJsonValid(invalidJson, model.Snapshot{}))
+	})
 }
 
 func TestReadJsonFileToObject(t *testing.T) {

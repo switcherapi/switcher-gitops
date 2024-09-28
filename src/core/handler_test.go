@@ -90,6 +90,41 @@ func TestAccountHandlerSyncRepository(t *testing.T) {
 		tearDown()
 	})
 
+	t.Run("Should sync successfully after account reactivation when it was pending", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		fakeApiService.pushChanges = PushChangeResponse{
+			Message: "Changes applied successfully",
+			Version: 1,
+		}
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-pending"
+		account.Domain.Status = model.StatusPending
+		account.Domain.Message = "Account was deactivated"
+		account.Domain.LastCommit = "123"
+		account.Domain.Version = 1
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByAccountId(string(accountCreated.ID.Hex()))
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
 	t.Run("Should sync successfully when repository is out of sync", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -304,6 +339,35 @@ func TestAccountHandlerNotSync(t *testing.T) {
 		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
 		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch repository data")
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+
+		tearDown()
+	})
+
+	t.Run("Should not sync when fetch repository data returns a malformed JSON content", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.content = `{
+			"domain": {
+				"group": [{
+					"name": "Release 1",
+					"description": "Showcase configuration",
+					"activated": true
+		}`
+
+		account := givenAccount()
+		account.Domain.ID = "123-error-malformed-json"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Invalid JSON content")
 		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
 
 		tearDown()
