@@ -24,11 +24,10 @@ const (
 	CHANGED DiffType = "CHANGED"
 	DELETED DiffType = "DELETED"
 
-	GROUP          DiffResult = "GROUP"
-	CONFIG         DiffResult = "CONFIG"
-	STRATEGY       DiffResult = "STRATEGY"
-	STRATEGY_VALUE DiffResult = "STRATEGY_VALUE"
-	COMPONENT      DiffResult = "COMPONENT"
+	GROUP     DiffResult = "GROUP"
+	CONFIG    DiffResult = "CONFIG"
+	STRATEGY  DiffResult = "STRATEGY"
+	COMPONENT DiffResult = "COMPONENT"
 )
 
 func NewComparatorService() *ComparatorService {
@@ -148,35 +147,14 @@ func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGr
 			if diffType == CHANGED {
 				diffFound = compareAndUpdateBool(leftStrategy.Activated, rightStrategy.Activated, diffFound, &modelDiffFound.Activated)
 				diffFound = compareAndUpdateString(leftStrategy.Operation, rightStrategy.Operation, diffFound, &modelDiffFound.Operation)
+				diffFound = compareAndUpdateArray(leftStrategy.Values, rightStrategy.Values, diffFound, &modelDiffFound.Values)
 			}
-
-			checkValuesDiff(leftStrategy, rightStrategy, leftGroup, leftConfig, diffResult, diffType)
 
 			if diffFound {
 				appendDiffResults(string(diffType), string(STRATEGY),
 					[]string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, modelDiffFound, diffResult)
 			}
 		}
-	}
-}
-
-func checkValuesDiff(leftStrategy model.Strategy, rightStrategy model.Strategy, leftGroup model.Group, leftConfig model.Config,
-	diffResult *model.DiffResult, diffType DiffType) {
-
-	if len(leftStrategy.Values) == 0 {
-		return
-	}
-
-	var diff []string
-	for _, leftValue := range leftStrategy.Values {
-		if (diffType == NEW || diffType == DELETED) && !slices.Contains(rightStrategy.Values, leftValue) {
-			diff = append(diff, leftValue)
-		}
-	}
-
-	if len(diff) > 0 {
-		appendDiffResults(string(diffType), string(STRATEGY_VALUE),
-			[]string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, diff, diffResult)
 	}
 }
 
@@ -195,7 +173,8 @@ func checkComponentsDiff(leftConfig model.Config, rightConfig model.Config, left
 	}
 
 	if len(diff) > 0 {
-		appendDiffResults(string(diffType), string(COMPONENT), []string{leftGroup.Name, leftConfig.Key}, diff, diffResult)
+		appendDiffResults(string(diffType), string(COMPONENT),
+			[]string{leftGroup.Name, leftConfig.Key}, diff, diffResult)
 	}
 }
 
@@ -218,6 +197,18 @@ func compareAndUpdateBool(left *bool, right *bool, diffFound bool, modelDiffFoun
 func compareAndUpdateString(left string, right string, diffFound bool, modelDiffFound *string) bool {
 	// Strings are optional and will only evaluate if right is not empty
 	if right != "" && left != right {
+		diffFound = true
+		*modelDiffFound = right
+	}
+	return diffFound
+}
+
+func compareAndUpdateArray(left []string, right []string, diffFound bool, modelDiffFound *[]string) bool {
+	// Arrays are optional and will only evaluate if right is not empty
+	slices.Sort(left)
+	slices.Sort(right)
+
+	if slices.Compare(left, right) != 0 {
 		diffFound = true
 		*modelDiffFound = right
 	}

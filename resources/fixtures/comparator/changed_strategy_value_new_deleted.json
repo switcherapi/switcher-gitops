@@ -15,7 +15,10 @@
                 "strategy": "VALUE_VALIDATION",
                 "activated": false,
                 "operation": "EXIST",
-                "values": []
+                "values": [
+                  "user_1",
+                  "user_3"
+                ]
               }
             ],
             "components": [

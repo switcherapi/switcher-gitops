@@ -9,6 +9,7 @@ import (
 )
 
 const DEFAULT_JSON = "../../resources/fixtures/comparator/default.json"
+const STAGING_JSON = "../../resources/fixtures/comparator/staging.json"
 
 func TestCheckGroupSnapshot(t *testing.T) {
 	c := NewComparatorService()
@@ -492,10 +493,10 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
-	t.Run("Should return new strategy value", func(t *testing.T) {
+	t.Run("Should return changes in strategy value (new)", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_strategy_value.json")
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_strategy_value_new.json")
 		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
 		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
 
@@ -509,24 +510,27 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		assert.JSONEq(t, `{
 		"changes": [
 			{
-				"action": "NEW",
-				"diff": "STRATEGY_VALUE",
+				"action": "CHANGED",
+				"diff": "STRATEGY",
 				"path": [
 					"Release 1",
 					"MY_SWITCHER_1",
 					"VALUE_VALIDATION"
 				],
-				"content": [
-					"user_2"
-				]
+				"content": {
+					"values": [
+						"user_1",
+						"user_2"
+					]
+				}
 			}
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
-	t.Run("Should return deleted strategy value", func(t *testing.T) {
+	t.Run("Should return changes in strategy value (replaced)", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
-		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/deleted_strategy_value.json")
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_strategy_value.json")
 		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
 		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
 
@@ -540,19 +544,56 @@ func TestCheckStrategySnapshot(t *testing.T) {
 		assert.JSONEq(t, `{
 		"changes": [
 			{
-				"action": "DELETED",
-				"diff": "STRATEGY_VALUE",
+				"action": "CHANGED",
+				"diff": "STRATEGY",
 				"path": [
 					"Release 1",
 					"MY_SWITCHER_1",
 					"VALUE_VALIDATION"
 				],
-				"content": [
-					"user_1"
-				]
+				"content": {
+					"values": [
+						"user_2"
+					]
+				}
 			}
 		]}`, utils.ToJsonFromObject(actual))
 	})
+
+	t.Run("Should return changes in strategy value (new, deleted)", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile(STAGING_JSON)
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_strategy_value_new_deleted.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "CHANGED",
+				"diff": "STRATEGY",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_1",
+					"VALUE_VALIDATION"
+				],
+				"content": {
+					"values": [
+						"user_1",
+						"user_3"
+					]
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
 }
 
 func TestCheckComponentSnapshot(t *testing.T) {
