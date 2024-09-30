@@ -27,6 +27,21 @@ GitOps Domain Snapshot Orchestrator for Switcher API
 - Flexible settings allow to define the best workflow for your organization
 - Orquestrates accounts per Domain environments allowing seemless integration with any branching strategy
 
+# Deploying locally
+
+## Requirements
+- Docker & docker-compose
+- Switcher API & Switcher Management
+- Git Token (read/write access) for the repository
+
+1. Configure Switcher API to allow Switcher GitOps to access the API<br>
+Set SWITCHER_GITOPS_JWT_SECRET for Switcher API and SWITCHER_API_JWT_SECRET for Switcher GitOps.
+
+2. [Start](https://github.com/switcherapi/switcher-api?tab=readme-ov-file#running-switcher-api-from-docker-composer-manifest-file) Switcher API and Switcher Management
+3. Start Switcher GitOps `docker-compose -d up`<br>
+You might need to remove mongodb setting from docker-compose.yml if lauching the full Switcher API stack from the step 2.
+
+
 # Integrated tests
 
 Set up PAT (Personal Access Token) for Switcher GitOps to access the repository. You can either create a fine-grained token with only the necessary permissions such as Content (Read and Write) and Metadata (Read) or use a personal token with full access.

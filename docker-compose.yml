@@ -1,0 +1,48 @@
+version: '3.8'
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  mongodb:
+    image : mongo
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_DATABASE: switcher-gitops
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - 27017:27017
+    networks:
+      - backend
+    restart: unless-stopped
+
+  switchergitops:
+    image: trackerforce/switcher-gitops
+    container_name: switchergitops
+    command: ["/app"]
+    ports:
+      - 8000:8000
+    networks:
+      - backend
+    environment:
+      - RELEASE_TIME=today
+      - PORT=8000
+      - LOG_LEVEL=DEBUG
+
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB=switcher-gitops
+      - GIT_TOKEN_PRIVATE_KEY=SecretSecretSecretSecretSecretSe
+      - HANDLER_WAITING_TIME=1m
+
+      - SWITCHER_API_URL=https://switcherapi.com/api
+      - SWITCHER_API_JWT_SECRET=SecretSecretSecretSecretSecretSe
+      - SWITCHER_PATH_GRAPHQL=/gitops-graphql
+      - SWITCHER_PATH_PUSH=/gitops/v1/push
+    depends_on:
+      - mongodb

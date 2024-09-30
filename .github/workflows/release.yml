@@ -1,10 +1,8 @@
-name: Master CI
+name: Release CI
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  release:
+    types: [ created ]
 
 jobs:
   build-test:
@@ -42,23 +40,22 @@ jobs:
         GIT_TOKEN_READ_ONLY: ${{ secrets.GIT_TOKEN_READ_ONLY }}
         GIT_REPO_URL: ${{ secrets.GIT_REPO_URL }}
         GIT_BRANCH: ${{ secrets.GIT_BRANCH }}
-
-    - name: SonarCloud Scan
-      uses: sonarsource/sonarcloud-github-action@v3.0.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
+  
   docker:
     name: Publish Docker Image
     needs: [ build-test ]
     runs-on: ubuntu-latest
-    if: success() && github.ref == 'refs/heads/master'
-
-    outputs:
-        digest: ${{ steps.docker_build.outputs.digest }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: trackerforce/switcher-gitops
+      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -72,44 +69,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push
-        id: docker_build
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: trackerforce/switcher-gitops:latest
-
-  update-kustomize:
-    name: Deploy
-    needs: [ docker ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: 'master'
-
-      - name: Checkout Kustomize
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.ARGOCD_PAT }}
-          repository: switcherapi/switcher-deployment
-          ref: master
-
-      - name: Set up arkade-get
-        uses: alexellis/arkade-get@master
-        with:
-          kubectl: latest
-          kustomize: latest
-
-      - name: Update GitOps repository
-        run: |
-          cd switcher-gitops/base
-          echo RELEASE_TIME=`date` > environment-properties.env
-          kustomize edit set image trackerforce/switcher-gitops:latest=trackerforce/switcher-gitops@${{ needs.docker.outputs.digest }}
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git config --global user.name "${{ github.actor }}"
-          git add .
-          git commit -m "[argocd] switcher-gitops: ${{ needs.docker.outputs.digest }}"
-          git push
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
