@@ -17,14 +17,15 @@ GitOps Domain Snapshot Orchestrator for Switcher API
 
 ***
 
-![Switcher API: Cloud-based Feature Flag API](https://github.com/switcherapi/switcherapi-assets/blob/master/logo/switcherapi_grey.png)
+![Switcher API: Cloud-based Feature Flag API](https://github.com/switcherapi/switcherapi-assets/blob/master/logo/switcherapi_gitops.png)
 
 # About  
 **Switcher GitOps** is used to orchestrate Domain Snapshots for Switcher API. It allows managing feature flags and configurations lifecycle.
 
 - Manages Switchers with GitOps workflow (repository as a source of truth)
 - Repository synchronization allows integrated tools such as Switcher API Management and Switcher Slack App to work in sync
-- Flexible settings allow to define the best workflow for your ecosystem
+- Flexible settings allow to define the best workflow for your organization
+- Orquestrates accounts per Domain environments allowing seemless integration with any branching strategy
 
 # Integrated tests
 
