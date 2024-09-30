@@ -19,7 +19,7 @@ func TestFetchSnapshotVersion(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 		version, _ := apiService.FetchSnapshotVersion("domainId", "default")
 
 		assert.Contains(t, version, "version", "Missing version in response")
@@ -30,7 +30,7 @@ func TestFetchSnapshotVersion(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "error": "Invalid API token" }`)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService("INVALID_KEY", fakeApiServer.URL)
+		apiService := NewApiService("INVALID_KEY", fakeApiServer.URL, "")
 		version, _ := apiService.FetchSnapshotVersion("domainId", "default")
 
 		assert.Contains(t, version, "Invalid API token")
@@ -41,14 +41,14 @@ func TestFetchSnapshotVersion(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, responsePayload)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 		version, _ := apiService.FetchSnapshotVersion("INVALID_DOMAIN", "default")
 
 		assert.Contains(t, version, "errors")
 	})
 
 	t.Run("Should return error - invalid API URL", func(t *testing.T) {
-		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080")
+		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080", "")
 		_, err := apiService.FetchSnapshotVersion("domainId", "default")
 
 		assert.NotNil(t, err)
@@ -61,7 +61,7 @@ func TestFetchSnapshot(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 		snapshot, _ := apiService.FetchSnapshot("domainId", "default")
 
 		assert.Contains(t, snapshot, "domain", "Missing domain in snapshot")
@@ -75,7 +75,7 @@ func TestFetchSnapshot(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 		snapshot, _ := apiService.FetchSnapshot("domainId", "default")
 		data := apiService.NewDataFromJson([]byte(snapshot))
 
@@ -88,7 +88,7 @@ func TestFetchSnapshot(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "error": "Invalid API token" }`)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService("INVALID_KEY", fakeApiServer.URL)
+		apiService := NewApiService("INVALID_KEY", fakeApiServer.URL, "")
 		snapshot, _ := apiService.FetchSnapshot("domainId", "default")
 
 		assert.Contains(t, snapshot, "Invalid API token")
@@ -99,14 +99,14 @@ func TestFetchSnapshot(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, responsePayload)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 		snapshot, _ := apiService.FetchSnapshot("INVALID_DOMAIN", "default")
 
 		assert.Contains(t, snapshot, "errors")
 	})
 
 	t.Run("Should return error - invalid API URL", func(t *testing.T) {
-		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080")
+		apiService := NewApiService(config.GetEnv(SWITCHER_API_JWT_SECRET), "http://localhost:8080", "")
 		_, err := apiService.FetchSnapshot("domainId", "default")
 
 		assert.NotNil(t, err)
@@ -123,7 +123,7 @@ func TestPushChangesToAPI(t *testing.T) {
 		}`)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 
 		// Test
 		response, _ := apiService.PushChanges("domainId", diff)
@@ -140,7 +140,7 @@ func TestPushChangesToAPI(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusBadRequest, `{ "error": "Config already exists" }`)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL)
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "")
 
 		// Test
 		_, err := apiService.PushChanges("domainId", diff)
@@ -157,7 +157,7 @@ func TestPushChangesToAPI(t *testing.T) {
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, `{ "error": "Invalid API token" }`)
 		defer fakeApiServer.Close()
 
-		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL)
+		apiService := NewApiService("[INVALID_KEY]", fakeApiServer.URL, "")
 
 		// Test
 		_, err := apiService.PushChanges("domainId", diff)
@@ -170,12 +170,39 @@ func TestPushChangesToAPI(t *testing.T) {
 	t.Run("Should return error - API not accessible", func(t *testing.T) {
 		// Given
 		diff := givenDiffResult("default")
-		apiService := NewApiService("[SWITCHER_API_JWT_SECRET]", "http://localhost:8080")
+		apiService := NewApiService("[SWITCHER_API_JWT_SECRET]", "http://localhost:8080", "")
 
 		// Test
 		_, err := apiService.PushChanges("domainId", diff)
 
 		// Assert
+		assert.NotNil(t, err)
+	})
+}
+
+func TestFetchSnapshotWithCaCert(t *testing.T) {
+	t.Run("Should return snapshot", func(t *testing.T) {
+		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot.json")
+		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "../../resources/fixtures/api/dummy.pem")
+		snapshot, _ := apiService.FetchSnapshot("domainId", "default")
+
+		assert.Contains(t, snapshot, "domain", "Missing domain in snapshot")
+		assert.Contains(t, snapshot, "version", "Missing version in snapshot")
+		assert.Contains(t, snapshot, "group", "Missing groups in snapshot")
+		assert.Contains(t, snapshot, "config", "Missing config in snapshot")
+	})
+
+	t.Run("Should return error - certificate not found", func(t *testing.T) {
+		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot.json")
+		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
+		defer fakeApiServer.Close()
+
+		apiService := NewApiService(SWITCHER_API_JWT_SECRET, fakeApiServer.URL, "invalid.pem")
+		_, err := apiService.FetchSnapshot("domainId", "default")
+
 		assert.NotNil(t, err)
 	})
 }

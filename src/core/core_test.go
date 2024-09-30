@@ -28,7 +28,7 @@ func setup() {
 	mongoDb = db.InitDb()
 
 	accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-	apiService := NewApiService("apiKey", "")
+	apiService := NewApiService("apiKey", "", "")
 	comparatorService := NewComparatorService()
 	coreHandler = NewCoreHandler(accountRepository, apiService, comparatorService)
 }

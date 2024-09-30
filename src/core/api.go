@@ -2,16 +2,20 @@ package core
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
 type GraphQLRequest struct {
@@ -32,14 +36,16 @@ type IAPIService interface {
 }
 
 type ApiService struct {
-	apiKey string
-	apiUrl string
+	apiKey     string
+	apiUrl     string
+	caCertPath string
 }
 
-func NewApiService(apiKey string, apiUrl string) *ApiService {
+func NewApiService(apiKey string, apiUrl string, caCertPath string) *ApiService {
 	return &ApiService{
-		apiKey: apiKey,
-		apiUrl: apiUrl,
+		apiKey:     apiKey,
+		apiUrl:     apiUrl,
+		caCertPath: caCertPath,
 	}
 }
 
@@ -101,8 +107,7 @@ func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, er
 	setHeaders(req, token)
 
 	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := a.doRequest(req)
 	if err != nil {
 		return "", err
 	}
@@ -123,8 +128,7 @@ func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (st
 	setHeaders(req, token)
 
 	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := a.doRequest(req)
 	if err != nil {
 		return "", 0, err
 	}
@@ -132,6 +136,35 @@ func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (st
 
 	responseBody, _ := io.ReadAll(resp.Body)
 	return string(responseBody), resp.StatusCode, nil
+}
+
+func (a *ApiService) doRequest(req *http.Request) (*http.Response, error) {
+	var client *http.Client
+
+	if a.caCertPath != "" {
+		caCert, err := os.ReadFile(a.caCertPath)
+
+		if err != nil {
+			utils.LogError("Error reading CA certificate file: " + err.Error())
+			return nil, err
+		}
+
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM([]byte(caCert))
+
+		utils.LogDebug("Using CA certificate for HTTPS requests")
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs: caCertPool,
+				},
+			},
+		}
+	} else {
+		client = &http.Client{}
+	}
+
+	return client.Do(req)
 }
 
 func generateBearerToken(apiKey string, subject string) string {

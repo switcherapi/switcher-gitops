@@ -79,6 +79,7 @@ func initCoreHandler(db *mongo.Database) *core.CoreHandler {
 	apiService := core.NewApiService(
 		config.GetEnv("SWITCHER_API_JWT_SECRET"),
 		config.GetEnv("SWITCHER_API_URL"),
+		config.GetEnv("SWITCHER_API_CA_CERT"),
 	)
 
 	coreHandler := core.NewCoreHandler(accountRepository, apiService, comparatorService)
