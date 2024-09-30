@@ -11,6 +11,7 @@ GitOps Domain Snapshot Orchestrator for Switcher API
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=switcherapi_switcher-gitops&metric=alert_status)](https://sonarcloud.io/dashboard?id=switcherapi_switcher-gitops)
 [![Known Vulnerabilities](https://snyk.io/test/github/switcherapi/switcher-gitops/badge.svg)](https://snyk.io/test/github/switcherapi/switcher-gitops)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker Hub](https://img.shields.io/docker/pulls/trackerforce/switcher-gitops.svg)](https://hub.docker.com/r/trackerforce/switcher-gitops)
 [![Slack: Switcher-HQ](https://img.shields.io/badge/slack-@switcher/hq-blue.svg?logo=slack)](https://switcher-hq.slack.com/)
 
 </div>
@@ -24,12 +25,33 @@ GitOps Domain Snapshot Orchestrator for Switcher API
 
 - Manages Switchers with GitOps workflow (repository as a source of truth)
 - Repository synchronization allows integrated tools such as Switcher API Management and Switcher Slack App to work in sync
-- Flexible settings allow to define the best workflow for your organization
-- Orquestrates accounts per Domain environments allowing seemless integration with any branching strategy
+- Flexible settings allow you to define the best workflow for your organization
+- Orchestrates accounts per Domain environments allowing seamless integration with any branching strategy
 
-# Deploying locally
+# Getting Started
 
-## Requirements
+## Using Swither API Cloud
+
+Switcher GitOps is available as a cloud-hosted service. You can sign up for a free account at [Switcher API Cloud](https://cloud.switcherapi.com).
+
+1. Create and Configure a new Domain
+2. Select the Domain and click on the Menu toolbar
+3. Under Integrations, select Switcher GitOps
+4. Follow the instructions to set up the repository
+
+## Self-hosted: Deploying to Kubernetes
+
+### Requirements
+- Kubernetes cluster
+- Helm 3
+- Switcher API & Switcher Management
+- Git Token (read/write access) for the repository
+
+Find detailed instructions on how to deploy Switcher GitOps to Kubernetes [here](https://github.com/switcherapi/helm-charts).
+
+## Development: Deploying locally
+
+### Requirements
 - Docker & docker-compose
 - Switcher API & Switcher Management
 - Git Token (read/write access) for the repository
@@ -39,8 +61,17 @@ Set SWITCHER_GITOPS_JWT_SECRET for Switcher API and SWITCHER_API_JWT_SECRET for 
 
 2. [Start](https://github.com/switcherapi/switcher-api?tab=readme-ov-file#running-switcher-api-from-docker-composer-manifest-file) Switcher API and Switcher Management
 3. Start Switcher GitOps `docker-compose -d up`<br>
-You might need to remove mongodb setting from docker-compose.yml if lauching the full Switcher API stack from the step 2.
+You might need to remove mongodb setting from docker-compose.yml if launching the full Switcher API stack from step 2.
 
+## Development: Running locally
+
+### Requirements
+- Go [check version in go.mod]
+- MongoDB +7.0
+
+1. Clone the repository
+2. Configure the environment variables in the `.env.test` file
+3. `make run` to start the application
 
 # Integrated tests
 
