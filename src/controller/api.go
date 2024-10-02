@@ -46,7 +46,7 @@ func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
 func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.Request) {
 	utils.ResponseJSON(w, ApiCheckResponse{
 		Status:      "All good",
-		Version:     "1.0.0",
+		Version:     "1.0.1",
 		ReleaseTime: config.GetEnv("RELEASE_TIME"),
 		ApiSettings: ApiSettingsResponse{
 			SwitcherURL:       config.GetEnv("SWITCHER_API_URL"),

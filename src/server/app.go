@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,20 +35,11 @@ func NewApp() *App {
 }
 
 func (app *App) Start() error {
-	port := config.GetEnv("PORT")
-	app.httpServer = &http.Server{
-		Addr:    ":" + port,
-		Handler: app.routerHandlers,
+	if config.GetEnv("SSL_ENABLED") == "true" {
+		app.httpServer = startServerWithSsl(app.routerHandlers)
+	} else {
+		app.httpServer = startServer(app.routerHandlers)
 	}
-
-	go func() {
-		if err := app.httpServer.ListenAndServe(); err != nil {
-			utils.LogError("Failed to listen and serve: %s", err.Error())
-			os.Exit(1)
-		}
-	}()
-
-	utils.LogInfo("Server started on port %s", port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Interrupt)
@@ -58,6 +50,50 @@ func (app *App) Start() error {
 	defer shutdown()
 
 	return app.httpServer.Shutdown(ctx)
+}
+
+func startServer(routerHandlers *mux.Router) *http.Server {
+	port := config.GetEnv("PORT")
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: routerHandlers,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			utils.LogError("Failed to listen and serve: %s", err.Error())
+			os.Exit(1)
+		}
+	}()
+
+	utils.LogInfo("[no-SSL] Server started on port %s", port)
+
+	return server
+}
+
+func startServerWithSsl(routerHandlers *mux.Router) *http.Server {
+	port := config.GetEnv("PORT")
+	certFile := config.GetEnv("SSL_CERT_FILE")
+	keyFile := config.GetEnv("SSL_KEY_FILE")
+
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: routerHandlers,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+
+	go func() {
+		if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
+			utils.LogError("Failed to listen and serve: %s", err.Error())
+			os.Exit(1)
+		}
+	}()
+
+	utils.LogInfo("[SSL] Server started on port %s", port)
+
+	return server
 }
 
 func initRoutes(db *mongo.Database, coreHandler *core.CoreHandler) *mux.Router {
