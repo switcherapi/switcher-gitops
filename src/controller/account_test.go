@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/repository"
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
@@ -29,9 +30,7 @@ func TestCreateAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, response.Code)
 		assert.Nil(t, err)
 		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
-
-		token, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
-		assert.Equal(t, accountV1.Token, token)
+		assert.Contains(t, accountResponse.Token, "...")
 	})
 
 	t.Run("Should not create an account - invalid request", func(t *testing.T) {
@@ -78,6 +77,7 @@ func TestFetchAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
 		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Contains(t, accountResponse.Token, "...")
 	})
 
 	t.Run("Should not fetch an account by domain ID / environment - not found", func(t *testing.T) {
@@ -110,6 +110,8 @@ func TestFetchAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(accountsResponse))
+		assert.Contains(t, accountsResponse[0].Token, "...")
+		assert.Contains(t, accountsResponse[1].Token, "...")
 	})
 
 	t.Run("Should not fetch all accounts by domain ID - not found", func(t *testing.T) {
@@ -174,11 +176,12 @@ func TestUpdateAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
 		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Contains(t, accountResponse.Token, "...")
 
-		encryptedToken := utils.Encrypt(accountV1.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
-		assert.NotEqual(t, encryptedToken, accountResponse.Token)
+		accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
+		accountFromDb, _ := accountRepository.FetchByAccountId(accountResponse.ID.Hex())
 
-		decryptedToken, _ := utils.Decrypt(accountResponse.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		decryptedToken, _ := utils.Decrypt(accountFromDb.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		assert.Equal(t, "new-token", decryptedToken)
 	})
 
