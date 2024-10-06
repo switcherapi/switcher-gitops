@@ -64,6 +64,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 	gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
 	go controller.coreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
 
+	opaqueTokenFromResponse(accountCreated)
 	utils.ResponseJSON(w, accountCreated, http.StatusCreated)
 }
 
@@ -78,6 +79,7 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 		return
 	}
 
+	opaqueTokenFromResponse(account)
 	utils.ResponseJSON(w, account, http.StatusOK)
 }
 
@@ -91,7 +93,13 @@ func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.Re
 		return
 	}
 
-	utils.ResponseJSON(w, accounts, http.StatusOK)
+	var accountsResponse []model.Account
+	for _, account := range accounts {
+		opaqueTokenFromResponse(&account)
+		accountsResponse = append(accountsResponse, account)
+	}
+
+	utils.ResponseJSON(w, accountsResponse, http.StatusOK)
 }
 
 func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +123,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 		return
 	}
 
+	opaqueTokenFromResponse(accountUpdated)
 	utils.ResponseJSON(w, accountUpdated, http.StatusOK)
 }
 
@@ -130,4 +139,10 @@ func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter,
 	}
 
 	utils.ResponseJSON(w, nil, http.StatusNoContent)
+}
+
+func opaqueTokenFromResponse(account *model.Account) {
+	if account.Token != "" {
+		account.Token = "..." + account.Token[len(account.Token)-4:]
+	}
 }
