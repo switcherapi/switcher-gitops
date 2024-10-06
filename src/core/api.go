@@ -78,8 +78,9 @@ func (a *ApiService) FetchSnapshot(domainId string, environment string) (string,
 }
 
 func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error) {
+	resource := config.GetEnv("SWITCHER_PATH_PUSH")
 	reqBody, _ := json.Marshal(diff)
-	responseBody, status, err := a.doPostRequest(a.apiUrl+config.GetEnv("SWITCHER_PATH_PUSH"), domainId, reqBody)
+	responseBody, status, err := a.doPostRequest(a.apiUrl, resource, domainId, reqBody)
 
 	if err != nil {
 		return PushChangeResponse{}, err
@@ -97,11 +98,12 @@ func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushCh
 
 func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, error) {
 	// Generate a bearer token
-	token := generateBearerToken(a.apiKey, domainId)
+	resource := config.GetEnv("SWITCHER_PATH_GRAPHQL")
+	token := generateBearerToken(a.apiKey, domainId, resource)
 
 	// Create a new request
 	reqBody, _ := json.Marshal(GraphQLRequest{Query: query})
-	req, _ := http.NewRequest("POST", a.apiUrl+config.GetEnv("SWITCHER_PATH_GRAPHQL"), bytes.NewBuffer(reqBody))
+	req, _ := http.NewRequest("POST", a.apiUrl+resource, bytes.NewBuffer(reqBody))
 
 	// Set the request headers
 	setHeaders(req, token)
@@ -117,12 +119,12 @@ func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, er
 	return string(responseBody), nil
 }
 
-func (a *ApiService) doPostRequest(url string, domainId string, body []byte) (string, int, error) {
+func (a *ApiService) doPostRequest(url string, resource string, domainId string, body []byte) (string, int, error) {
 	// Generate a bearer token
-	token := generateBearerToken(a.apiKey, domainId)
+	token := generateBearerToken(a.apiKey, domainId, resource)
 
 	// Create a new request
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, _ := http.NewRequest("POST", url+resource, bytes.NewBuffer(body))
 
 	// Set the request headers
 	setHeaders(req, token)
@@ -167,11 +169,11 @@ func (a *ApiService) doRequest(req *http.Request) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func generateBearerToken(apiKey string, subject string) string {
+func generateBearerToken(apiKey string, subject string, resource string) string {
 	// Define the claims for the JWT token
 	claims := jwt.MapClaims{
-		"iss":     "GitOps Service",
-		"sub":     "/resource",
+		"iss":     "Switcher GitOps",
+		"sub":     resource,
 		"subject": subject,
 		"exp":     time.Now().Add(time.Minute).Unix(),
 	}
