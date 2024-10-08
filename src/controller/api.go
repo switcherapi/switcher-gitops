@@ -13,10 +13,11 @@ import (
 type ApiController struct {
 	coreHandler       *core.CoreHandler
 	routeCheckApiPath string
+	routeApiDocsPath  string
 }
 
 type ApiCheckResponse struct {
-	Status      string              `json:"message"`
+	Status      string              `json:"status"`
 	Version     string              `json:"version"`
 	ReleaseTime string              `json:"release_time"`
 	ApiSettings ApiSettingsResponse `json:"api_settings"`
@@ -34,16 +35,25 @@ func NewApiController(coreHandler *core.CoreHandler) *ApiController {
 	return &ApiController{
 		coreHandler:       coreHandler,
 		routeCheckApiPath: "/api/check",
+		routeApiDocsPath:  "/api/docs",
 	}
+}
+
+func ConfigureHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
 }
 
 func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
 	r.NewRoute().Path(controller.routeCheckApiPath).Name("CheckApi").HandlerFunc(controller.CheckApiHandler).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeApiDocsPath).Name("ApiDocs").HandlerFunc(controller.ApiDocsHandler).Methods(http.MethodGet)
 
 	return r
 }
 
 func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	utils.ResponseJSON(w, ApiCheckResponse{
 		Status:      "All good",
 		Version:     "1.0.1",
@@ -56,4 +66,11 @@ func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.
 			NumGoroutines:     runtime.NumGoroutine(),
 		},
 	}, http.StatusOK)
+}
+
+func (controller *ApiController) ApiDocsHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
+	w.WriteHeader(http.StatusOK)
+	http.ServeFile(w, r, "resources/swagger.yaml")
 }
