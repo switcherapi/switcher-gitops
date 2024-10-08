@@ -41,6 +41,8 @@ func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler 
 }
 
 func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
@@ -69,6 +71,8 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 }
 
 func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 
@@ -84,6 +88,8 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 }
 
 func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	domainId := mux.Vars(r)["domainId"]
 
 	accounts := controller.accountRepository.FetchAllByDomainId(domainId)
@@ -103,6 +109,8 @@ func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.Re
 }
 
 func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
@@ -128,6 +136,8 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 }
 
 func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
+	ConfigureHeaders(w)
+
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 

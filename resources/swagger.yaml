@@ -1,0 +1,348 @@
+openapi: 3.0.1
+info:
+  title: Switcher GitOps
+  version: v1.0.1
+  description: GitOps Domain Snapshot Orchestrator for Switcher API.
+  contact:
+    name: Roger Floriano (petruki)
+    email: switcher.project@gmail.com
+    url: https://github.com/petruki
+  license:
+    name: MIT
+    url: https://github.com/switcherapi/switcher-gitops/blob/master/LICENSE
+servers:
+  - url: http://localhost:8000
+    description: Local
+  - url: https://localhost:8000
+    description: Remote
+paths:
+  /api/check:
+    get:
+      tags:
+        - API
+      summary: Check API status
+      description: Check API status
+      responses:
+        '200':
+          description: API status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: API status
+                  version:
+                    type: string
+                    description: API version
+                  release_time:
+                    type: string
+                    description: API last release date time
+                  api_settings:
+                    type: object
+                    properties:
+                      switcher_url:
+                        type: string
+                        description: Switcher API URL
+                      switcher_secret:
+                        type: boolean
+                        description: Has Switcher API secret
+                      git_token_secret:
+                        type: boolean
+                        description: Has Git token secret
+                      core_handler_status:
+                        type: boolean
+                        description: Core handler status (-1 Created, 0 Initialized, 1 Running)
+                        enum: [ "-1", "0", "1" ]
+                      num_goroutines:
+                        type: integer
+                        description: Number of goroutines running
+  /account:
+    post:
+      tags:
+        - Account API
+      summary: Create a new account
+      description: Create a new account and starts handler when active
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error creating accoun
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Account API
+      summary: Update an existing account
+      description: Update an existing account and starts handler when active
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountRequest'
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error updating account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /account/{domainId}:
+    get:
+      tags:
+        - Account API
+      summary: Get All accounts by domain ID
+      description: Get all accounts by domain ID
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          description: Domain ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Account list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponse'
+        '404':
+          description: Accounts not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error getting accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /account/{domainId}/{environment}:
+    get:
+      tags:
+        - Account API
+      summary: Get account by domain ID and environment
+      description: Get account by domain ID and environment
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          description: Domain ID
+          schema:
+            type: string
+            format: uuid
+        - name: environment
+          in: path
+          required: true
+          description: Environment name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Account list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error getting account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Account API
+      summary: Delete account by domain ID and environment
+      description: Delete account by domain ID and environment
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          description: Domain ID
+          schema:
+            type: string
+            format: uuid
+        - name: environment
+          in: path
+          required: true
+          description: Environment name
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account deleted
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error deleting account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    AccountRequest:
+      type: object
+      properties:
+        repository:
+          type: string
+          description: Git repository URL
+        branch:
+          type: string
+          description: Git branch
+          example: main
+        token:
+          type: string
+          description: Git token
+        environment:
+          type: string
+          description: Environment name
+          example: default
+        domain:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Domain ID
+            name:
+              type: string
+              description: Domain name
+        settings:
+          type: object
+          properties:
+            active:
+              type: boolean
+              description: Sync handler status
+            window:
+              type: string
+              description: Sync window time (s, m, h)
+              example: 1m
+            forceprune:
+              type: boolean
+              description: Force delete elements from the API when true
+    AccountResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          description: Account ID
+        repository:
+          type: string
+          description: Git repository URL
+        branch:
+          type: string
+          description: Git branch
+          example: main
+        token:
+          type: string
+          description: Git token
+        environment:
+          type: string
+          description: Environment name
+          example: default
+        domain:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Domain ID
+            name:
+              type: string
+              description: Domain name
+            version:
+              type: string
+              description: Domain version
+            lastcommit:
+              type: string
+              description: Last respository commit hash
+            lastupdate:
+              type: string
+              description: Last respository commit date
+            status:
+              type: string
+              description: Sync status
+              enum: [ "Pending", "Synced", "OutSync", "Error" ]
+            message:
+              type: string
+              description: Sync last message
+        settings:
+          type: object
+          properties:
+            active:
+              type: boolean
+              description: Sync handler status
+            window:
+              type: string
+              description: Sync window time (s, m, h)
+              example: 1m
+            forceprune:
+              type: boolean
+              description: Force delete elements from the API when true
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
