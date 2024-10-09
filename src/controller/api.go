@@ -39,12 +39,8 @@ func NewApiController(coreHandler *core.CoreHandler) *ApiController {
 	}
 }
 
-func ConfigureHeaders(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-}
-
 func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
+	r.Use(DefaultHeaders)
 	r.NewRoute().Path(controller.routeCheckApiPath).Name("CheckApi").HandlerFunc(controller.CheckApiHandler).Methods(http.MethodGet)
 	r.NewRoute().Path(controller.routeApiDocsPath).Name("ApiDocs").HandlerFunc(controller.ApiDocsHandler).Methods(http.MethodGet)
 
@@ -52,8 +48,6 @@ func (controller *ApiController) RegisterRoutes(r *mux.Router) http.Handler {
 }
 
 func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	utils.ResponseJSON(w, ApiCheckResponse{
 		Status:      "All good",
 		Version:     "1.0.1",
@@ -69,8 +63,6 @@ func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.
 }
 
 func (controller *ApiController) ApiDocsHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	w.WriteHeader(http.StatusOK)
 	http.ServeFile(w, r, "resources/swagger.yaml")
 }
