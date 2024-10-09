@@ -31,18 +31,21 @@ func NewAccountController(repo repository.AccountRepository, coreHandler *core.C
 }
 
 func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler {
-	r.NewRoute().Path(controller.routeAccountPath).Name("CreateAccount").HandlerFunc(controller.CreateAccountHandler).Methods(http.MethodPost)
-	r.NewRoute().Path(controller.routeAccountPath).Name("UpdateAccount").HandlerFunc(controller.UpdateAccountHandler).Methods(http.MethodPut)
-	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").HandlerFunc(controller.FetchAllAccountsByDomainIdHandler).Methods(http.MethodGet)
-	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").HandlerFunc(controller.FetchAccountHandler).Methods(http.MethodGet)
-	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("DeleteAccount").HandlerFunc(controller.DeleteAccountHandler).Methods(http.MethodDelete)
+	r.NewRoute().Path(controller.routeAccountPath).Name("CreateAccount").Handler(
+		ValidateToken(http.HandlerFunc(controller.CreateAccountHandler))).Methods(http.MethodPost)
+	r.NewRoute().Path(controller.routeAccountPath).Name("UpdateAccount").Handler(
+		ValidateToken(http.HandlerFunc(controller.UpdateAccountHandler))).Methods(http.MethodPut)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").Handler(
+		ValidateToken(http.HandlerFunc(controller.FetchAllAccountsByDomainIdHandler))).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").Handler(
+		ValidateToken(http.HandlerFunc(controller.FetchAccountHandler))).Methods(http.MethodGet)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("DeleteAccount").Handler(
+		ValidateToken(http.HandlerFunc(controller.DeleteAccountHandler))).Methods(http.MethodDelete)
 
 	return r
 }
 
 func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
@@ -71,8 +74,6 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 }
 
 func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 
@@ -88,8 +89,6 @@ func (controller *AccountController) FetchAccountHandler(w http.ResponseWriter, 
 }
 
 func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	domainId := mux.Vars(r)["domainId"]
 
 	accounts := controller.accountRepository.FetchAllByDomainId(domainId)
@@ -109,8 +108,6 @@ func (controller *AccountController) FetchAllAccountsByDomainIdHandler(w http.Re
 }
 
 func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
@@ -136,8 +133,6 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 }
 
 func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
-	ConfigureHeaders(w)
-
 	domainId := mux.Vars(r)["domainId"]
 	enviroment := mux.Vars(r)["enviroment"]
 

@@ -15,6 +15,11 @@ servers:
     description: Local
   - url: https://localhost:8000
     description: Remote
+tags:
+  - name: API
+    description: API status & docs
+  - name: Account API
+    description: Account management
 paths:
   /api/check:
     get:
@@ -64,6 +69,8 @@ paths:
         - Account API
       summary: Create a new account
       description: Create a new account and starts handler when active
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -94,6 +101,8 @@ paths:
         - Account API
       summary: Update an existing account
       description: Update an existing account and starts handler when active
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -125,6 +134,8 @@ paths:
         - Account API
       summary: Get All accounts by domain ID
       description: Get all accounts by domain ID
+      security:
+        - bearerAuth: []
       parameters:
         - name: domainId
           in: path
@@ -166,6 +177,8 @@ paths:
         - Account API
       summary: Get account by domain ID and environment
       description: Get account by domain ID and environment
+      security:
+        - bearerAuth: []
       parameters:
         - name: domainId
           in: path
@@ -210,6 +223,8 @@ paths:
         - Account API
       summary: Delete account by domain ID and environment
       description: Delete account by domain ID and environment
+      security:
+        - bearerAuth: []
       parameters:
         - name: domainId
           in: path
@@ -240,6 +255,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     AccountRequest:
       type: object

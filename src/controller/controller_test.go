@@ -6,7 +6,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/core"
@@ -50,11 +52,36 @@ func shutdown() {
 	mongoDb.Client().Disconnect(context.Background())
 }
 
-func executeRequest(req *http.Request) *httptest.ResponseRecorder {
+// Helpers
+
+func executeRequest(req *http.Request, router *mux.Router, token string) *httptest.ResponseRecorder {
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
 	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
+	router.ServeHTTP(rr, req)
 
 	return rr
+}
+
+func generateToken(subject string, duration time.Duration) string {
+	apiKey := config.GetEnv("SWITCHER_API_JWT_SECRET")
+
+	// Define the claims for the JWT token
+	claims := jwt.MapClaims{
+		"iss":     "Switcher API",
+		"subject": subject,
+		"exp":     time.Now().Add(duration).Unix(),
+	}
+
+	// Create the JWT token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign the token with the API key
+	signedToken, _ := token.SignedString([]byte(apiKey))
+
+	return signedToken
 }
 
 // Fixtures

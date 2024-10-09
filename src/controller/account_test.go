@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -15,13 +16,20 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
+func TestToken(t *testing.T) {
+	token := generateToken("test", time.Minute)
+	assert.NotEmpty(t, token)
+}
+
 func TestCreateAccountHandler(t *testing.T) {
+	token := generateToken("test", time.Minute)
+
 	t.Run("Should create an account", func(t *testing.T) {
 		// Test
 		accountV1.Domain.ID = "123-controller-create-account"
 		payload, _ := json.Marshal(accountV1)
 		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		var accountResponse model.Account
@@ -37,7 +45,7 @@ func TestCreateAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusBadRequest, response.Code)
@@ -51,7 +59,7 @@ func TestCreateAccountHandler(t *testing.T) {
 		// Test
 		payload, _ := json.Marshal(accountV1)
 		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
@@ -60,6 +68,8 @@ func TestCreateAccountHandler(t *testing.T) {
 }
 
 func TestFetchAccountHandler(t *testing.T) {
+	token := generateToken("test", time.Minute)
+
 	t.Run("Should fetch an account by domain ID / environment", func(t *testing.T) {
 		// Create an account
 		accountV1.Domain.ID = "123-controller-fetch-account"
@@ -68,7 +78,7 @@ func TestFetchAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		var accountResponse model.Account
@@ -84,7 +94,7 @@ func TestFetchAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/not-found/default", bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusNotFound, response.Code)
@@ -101,7 +111,7 @@ func TestFetchAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		var accountsResponse []model.Account
@@ -118,7 +128,7 @@ func TestFetchAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/not-found", bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusNotFound, response.Code)
@@ -127,6 +137,8 @@ func TestFetchAccountHandler(t *testing.T) {
 }
 
 func TestUpdateAccountHandler(t *testing.T) {
+	token := generateToken("test", time.Minute)
+
 	t.Run("Should update an account", func(t *testing.T) {
 		// Create an account
 		accountV1.Domain.ID = "123-controller-update-account"
@@ -141,7 +153,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		// Test
 		payload, _ := json.Marshal(accountV2)
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		var accountResponse model.Account
@@ -167,7 +179,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		payload, _ := json.Marshal(accountRequest)
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		var accountResponse model.Account
@@ -189,7 +201,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		// Test
 		payload := []byte("")
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusBadRequest, response.Code)
@@ -207,7 +219,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		// Test
 		payload, _ := json.Marshal(accountV1)
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
@@ -216,6 +228,8 @@ func TestUpdateAccountHandler(t *testing.T) {
 }
 
 func TestDeleteAccountHandler(t *testing.T) {
+	token := generateToken("test", time.Minute)
+
 	t.Run("Should delete an account by domain ID / environment", func(t *testing.T) {
 		// Create an account
 		accountV1.Domain.ID = "123-controller-delete-account"
@@ -223,7 +237,7 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 		// Test
 		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, nil)
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusNoContent, response.Code)
@@ -232,11 +246,56 @@ func TestDeleteAccountHandler(t *testing.T) {
 	t.Run("Should not delete an account by domain ID / environment - not found", func(t *testing.T) {
 		// Test
 		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/not-found/default", nil)
-		response := executeRequest(req)
+		response := executeRequest(req, r, token)
 
 		// Assert
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
 		assert.Equal(t, "{\"error\":\"Error deleting account: account not found\"}", response.Body.String())
+	})
+}
+
+func TestUnnauthorizedAccountHandler(t *testing.T) {
+	t.Run("Should not create an account - unauthorized", func(t *testing.T) {
+		// Test
+		payload, _ := json.Marshal(accountV1)
+		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
+		response := executeRequest(req, r, "")
+
+		// Assert
+		assert.Equal(t, http.StatusUnauthorized, response.Code)
+		assert.Equal(t, "{\"error\":\"Invalid token\"}", response.Body.String())
+	})
+
+	t.Run("Should not fetch an account by domain ID / environment - unauthorized", func(t *testing.T) {
+		// Test
+		payload := []byte("")
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/123/default", bytes.NewBuffer(payload))
+		response := executeRequest(req, r, "")
+
+		// Assert
+		assert.Equal(t, http.StatusUnauthorized, response.Code)
+		assert.Equal(t, "{\"error\":\"Invalid token\"}", response.Body.String())
+	})
+
+	t.Run("Should not update an account - unauthorized", func(t *testing.T) {
+		// Test
+		payload, _ := json.Marshal(accountV1)
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
+		response := executeRequest(req, r, "")
+
+		// Assert
+		assert.Equal(t, http.StatusUnauthorized, response.Code)
+		assert.Equal(t, "{\"error\":\"Invalid token\"}", response.Body.String())
+	})
+
+	t.Run("Should not delete an account by domain ID / environment - unauthorized", func(t *testing.T) {
+		// Test
+		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/123/default", nil)
+		response := executeRequest(req, r, "")
+
+		// Assert
+		assert.Equal(t, http.StatusUnauthorized, response.Code)
+		assert.Equal(t, "{\"error\":\"Invalid token\"}", response.Body.String())
 	})
 }
 
