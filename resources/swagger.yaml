@@ -304,7 +304,7 @@ components:
     AccountResponse:
       type: object
       properties:
-        _id:
+        ID:
           type: string
           format: uuid
           description: Account ID

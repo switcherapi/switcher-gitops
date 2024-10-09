@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"os"
 	"runtime"
 
 	"github.com/gorilla/mux"
@@ -63,6 +64,8 @@ func (controller *ApiController) CheckApiHandler(w http.ResponseWriter, r *http.
 }
 
 func (controller *ApiController) ApiDocsHandler(w http.ResponseWriter, r *http.Request) {
+	fileContent, _ := os.ReadFile("./resources/swagger.yaml")
+
 	w.WriteHeader(http.StatusOK)
-	http.ServeFile(w, r, "resources/swagger.yaml")
+	w.Write(fileContent)
 }

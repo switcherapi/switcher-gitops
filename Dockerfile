@@ -10,3 +10,4 @@ RUN go mod download && \
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=builder /app/bin/app /app
+COPY --from=builder /app/resources/swagger.yaml ./resources/swagger.yaml
