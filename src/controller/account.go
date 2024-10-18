@@ -12,10 +12,25 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
+const (
+	InvalidRequestDesc = "Invalid request"
+)
+
 type AccountController struct {
 	coreHandler       *core.CoreHandler
 	accountRepository repository.AccountRepository
 	routeAccountPath  string
+}
+
+type AccountTokensRequest struct {
+	Token        string   `json:"token"`
+	DomainId     string   `json:"domainId"`
+	Environments []string `json:"environments"`
+}
+
+type AccountTokensResponse struct {
+	Result  bool   `json:"result"`
+	Message string `json:"message"`
 }
 
 type ErrorResponse struct {
@@ -35,6 +50,8 @@ func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler 
 		ValidateToken(http.HandlerFunc(controller.CreateAccountHandler))).Methods(http.MethodPost)
 	r.NewRoute().Path(controller.routeAccountPath).Name("UpdateAccount").Handler(
 		ValidateToken(http.HandlerFunc(controller.UpdateAccountHandler))).Methods(http.MethodPut)
+	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("UpdateAccountTokens").Handler(
+		ValidateToken(http.HandlerFunc(controller.UpdateAccountTokensHandler))).Methods(http.MethodPut)
 	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").Handler(
 		ValidateToken(http.HandlerFunc(controller.FetchAllAccountsByDomainIdHandler))).Methods(http.MethodGet)
 	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}/{enviroment}").Name("GetAccount").Handler(
@@ -49,7 +66,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
-		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
 		return
 	}
 
@@ -112,7 +129,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
 		utils.LogError("Error updating account: %s", err.Error())
-		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
 		return
 	}
 
@@ -130,6 +147,43 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 
 	opaqueTokenFromResponse(accountUpdated)
 	utils.ResponseJSON(w, accountUpdated, http.StatusOK)
+}
+
+func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseWriter, r *http.Request) {
+	var accountTokensRequest AccountTokensRequest
+	err := json.NewDecoder(r.Body).Decode(&accountTokensRequest)
+	if err != nil {
+		utils.LogError("Error updating account tokens: %s", err.Error())
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
+		return
+	}
+
+	if accountTokensRequest.Token == "" {
+		utils.LogError("Error updating account tokens: Token is required")
+		utils.ResponseJSON(w, ErrorResponse{Error: "Token is required"}, http.StatusBadRequest)
+		return
+	}
+
+	// Encrypt token before saving
+	accountTokensRequest.Token = utils.Encrypt(accountTokensRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+
+	// Update account tokens
+	for _, environment := range accountTokensRequest.Environments {
+		account, err := controller.accountRepository.FetchByDomainIdEnvironment(accountTokensRequest.DomainId, environment)
+		if err != nil {
+			utils.LogError("Error fetching account: %s", err.Error())
+			utils.ResponseJSON(w, ErrorResponse{Error: "Error fetching account"}, http.StatusNotFound)
+			return
+		}
+
+		account.Token = accountTokensRequest.Token
+		controller.accountRepository.Update(account)
+	}
+
+	utils.ResponseJSON(w, AccountTokensResponse{
+		Result:  true,
+		Message: "Account tokens updated successfully",
+	}, http.StatusOK)
 }
 
 func (controller *AccountController) DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {

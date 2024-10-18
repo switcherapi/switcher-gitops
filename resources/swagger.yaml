@@ -171,6 +171,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Account API
+      summary: Update multiple accounts token
+      description: Update multiple accounts token by domain ID and environment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          description: Domain ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountTokensRequest'
+      responses:
+        '200':
+          description: Account tokens updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountTokensResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'   
   /account/{domainId}/{environment}:
     get:
       tags:
@@ -361,6 +401,30 @@ components:
             forceprune:
               type: boolean
               description: Force delete elements from the API when true
+    AccountTokensRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Git token
+        domainId:
+          type: string
+          format: uuid
+          description: Domain ID
+        environments:
+          type: array
+          items:
+            type: string
+          description: Environment names
+    AccountTokensResponse:
+      type: object
+      properties:
+        result:
+          type: boolean
+          description: Result status
+        message:
+          type: string
+          description: Result message
     ErrorResponse:
       type: object
       properties:
