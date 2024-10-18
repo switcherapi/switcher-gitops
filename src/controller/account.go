@@ -12,6 +12,10 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
+const (
+	InvalidRequestDesc = "Invalid request"
+)
+
 type AccountController struct {
 	coreHandler       *core.CoreHandler
 	accountRepository repository.AccountRepository
@@ -62,7 +66,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 	var accountRequest model.Account
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
-		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
 		return
 	}
 
@@ -125,7 +129,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 	err := json.NewDecoder(r.Body).Decode(&accountRequest)
 	if err != nil {
 		utils.LogError("Error updating account: %s", err.Error())
-		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
 		return
 	}
 
@@ -150,7 +154,7 @@ func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseW
 	err := json.NewDecoder(r.Body).Decode(&accountTokensRequest)
 	if err != nil {
 		utils.LogError("Error updating account tokens: %s", err.Error())
-		utils.ResponseJSON(w, ErrorResponse{Error: "Invalid request"}, http.StatusBadRequest)
+		utils.ResponseJSON(w, ErrorResponse{Error: InvalidRequestDesc}, http.StatusBadRequest)
 		return
 	}
 
