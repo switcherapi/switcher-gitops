@@ -55,6 +55,7 @@ func (c *CoreHandler) InitCoreHandlerGoroutine() (int, error) {
 			account.Repository,
 			account.Token,
 			account.Branch,
+			account.Path,
 		))
 	}
 
@@ -85,7 +86,7 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		}
 
 		// Refresh account repository settings
-		gitService.UpdateRepositorySettings(account.Repository, account.Token, account.Branch)
+		gitService.UpdateRepositorySettings(account.Repository, account.Token, account.Branch, account.Path)
 
 		// Fetch repository data
 		repositoryData, err := gitService.GetRepositoryData(account.Environment)

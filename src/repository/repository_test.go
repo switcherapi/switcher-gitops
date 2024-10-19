@@ -41,6 +41,7 @@ func givenAccount(active bool) model.Account {
 	return model.Account{
 		Repository:  "switcherapi/switcher-gitops",
 		Branch:      "master",
+		Path:        "snapshots",
 		Environment: "default",
 		Domain: model.DomainDetails{
 			ID:         "123-repository-test",

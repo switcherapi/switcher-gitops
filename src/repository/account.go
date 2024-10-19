@@ -171,6 +171,7 @@ func getUpdateFields(account *model.Account) bson.M {
 
 	setMap["repository"] = account.Repository
 	setMap["branch"] = account.Branch
+	setMap["path"] = account.Path
 	setMap["environment"] = account.Environment
 	setMap["domain.name"] = account.Domain.Name
 	setMap["settings.active"] = account.Settings.Active

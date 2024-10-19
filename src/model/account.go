@@ -18,14 +18,11 @@ const (
 	MessageSynced    = "Synced successfully"
 )
 
-const (
-	FilePath = "resources/"
-)
-
 type Account struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	Repository  string             `json:"repository"`
 	Branch      string             `json:"branch"`
+	Path        string             `json:"path"`
 	Token       string             `json:"token"`
 	Environment string             `json:"environment"`
 	Domain      DomainDetails      `json:"domain"`
