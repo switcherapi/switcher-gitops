@@ -231,14 +231,16 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 	token := generateToken("test", time.Minute)
 
 	t.Run("Should update account tokens", func(t *testing.T) {
+		domainId := "123-controller-update-account-tokens"
+
 		// Create accounts
 		account1 := accountV1
-		account1.Domain.ID = "123-controller-update-account-tokens"
+		account1.Domain.ID = domainId
 		account1.Environment = "default"
 		accountController.CreateAccountHandler(givenAccountRequest(account1))
 
 		account2 := accountV1
-		account2.Domain.ID = "123-controller-update-account-tokens"
+		account2.Domain.ID = domainId
 		account2.Environment = "staging"
 		accountController.CreateAccountHandler(givenAccountRequest(account2))
 
@@ -248,7 +250,7 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 			Token:        "new-token",
 		})
 
-		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/"+account1.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/"+domainId, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -259,7 +261,7 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 		assert.Nil(t, err)
 
 		accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-		accountFromDb1 := accountRepository.FetchAllByDomainId(account1.Domain.ID)
+		accountFromDb1 := accountRepository.FetchAllByDomainId(domainId)
 
 		decryptedToken1, _ := utils.Decrypt(accountFromDb1[0].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		decryptedToken2, _ := utils.Decrypt(accountFromDb1[1].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
