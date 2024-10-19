@@ -24,7 +24,6 @@ type AccountController struct {
 
 type AccountTokensRequest struct {
 	Token        string   `json:"token"`
-	DomainId     string   `json:"domainId"`
 	Environments []string `json:"environments"`
 }
 
@@ -50,7 +49,7 @@ func (controller *AccountController) RegisterRoutes(r *mux.Router) http.Handler 
 		ValidateToken(http.HandlerFunc(controller.CreateAccountHandler))).Methods(http.MethodPost)
 	r.NewRoute().Path(controller.routeAccountPath).Name("UpdateAccount").Handler(
 		ValidateToken(http.HandlerFunc(controller.UpdateAccountHandler))).Methods(http.MethodPut)
-	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("UpdateAccountTokens").Handler(
+	r.NewRoute().Path(controller.routeAccountPath + "/tokens/{domainId}").Name("UpdateAccountTokens").Handler(
 		ValidateToken(http.HandlerFunc(controller.UpdateAccountTokensHandler))).Methods(http.MethodPut)
 	r.NewRoute().Path(controller.routeAccountPath + "/{domainId}").Name("GelAllAccountsByDomainId").Handler(
 		ValidateToken(http.HandlerFunc(controller.FetchAllAccountsByDomainIdHandler))).Methods(http.MethodGet)
@@ -150,6 +149,8 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 }
 
 func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseWriter, r *http.Request) {
+	domainId := mux.Vars(r)["domainId"]
+
 	var accountTokensRequest AccountTokensRequest
 	err := json.NewDecoder(r.Body).Decode(&accountTokensRequest)
 	if err != nil {
@@ -169,7 +170,7 @@ func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseW
 
 	// Update account tokens
 	for _, environment := range accountTokensRequest.Environments {
-		account, err := controller.accountRepository.FetchByDomainIdEnvironment(accountTokensRequest.DomainId, environment)
+		account, err := controller.accountRepository.FetchByDomainIdEnvironment(domainId, environment)
 		if err != nil {
 			utils.LogError("Error fetching account: %s", err.Error())
 			utils.ResponseJSON(w, ErrorResponse{Error: "Error fetching account"}, http.StatusNotFound)

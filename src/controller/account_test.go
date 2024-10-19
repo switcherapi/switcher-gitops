@@ -244,12 +244,11 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 
 		// Test
 		payload, _ := json.Marshal(AccountTokensRequest{
-			DomainId:     account1.Domain.ID,
 			Environments: []string{account1.Environment, account2.Environment},
 			Token:        "new-token",
 		})
 
-		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/"+account1.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/"+account1.Domain.ID, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -271,12 +270,11 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 	t.Run("Should not update account tokens - token is required", func(t *testing.T) {
 		// Test
 		payload, _ := json.Marshal(AccountTokensRequest{
-			DomainId:     "123-controller-update-account-tokens",
 			Environments: []string{"default"},
 			Token:        "",
 		})
 
-		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/123-controller-update-account-tokens", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/123-controller-update-account-tokens", bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -287,7 +285,7 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 	t.Run("Should not update account tokens - invalid request", func(t *testing.T) {
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/invalid", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/invalid", bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -298,12 +296,11 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 	t.Run("Should not update account tokens - not found", func(t *testing.T) {
 		// Test
 		payload, _ := json.Marshal(AccountTokensRequest{
-			DomainId:     "not-found",
 			Environments: []string{"default"},
 			Token:        "new-token",
 		})
 
-		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/not-found", bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath+"/tokens/not-found", bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
