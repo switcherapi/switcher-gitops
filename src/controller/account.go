@@ -137,7 +137,7 @@ func (controller *AccountController) UpdateAccountHandler(w http.ResponseWriter,
 		accountRequest.Token = utils.Encrypt(accountRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 	}
 
-	accountUpdated, err := controller.accountRepository.Update(&accountRequest)
+	accountUpdated, err := controller.accountRepository.UpdateByDomainEnvironment(&accountRequest)
 	if err != nil {
 		utils.LogError("Error updating account: %s", err.Error())
 		utils.ResponseJSON(w, ErrorResponse{Error: "Error updating account"}, http.StatusInternalServerError)
@@ -166,7 +166,7 @@ func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseW
 	}
 
 	// Encrypt token before saving
-	accountTokensRequest.Token = utils.Encrypt(accountTokensRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+	newEncryptedToken := utils.Encrypt(accountTokensRequest.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 
 	// Update account tokens
 	for _, environment := range accountTokensRequest.Environments {
@@ -177,8 +177,8 @@ func (controller *AccountController) UpdateAccountTokensHandler(w http.ResponseW
 			return
 		}
 
-		account.Token = accountTokensRequest.Token
-		controller.accountRepository.Update(account)
+		account.Token = newEncryptedToken
+		controller.accountRepository.UpdateByDomainEnvironment(account)
 	}
 
 	utils.ResponseJSON(w, AccountTokensResponse{

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/switcherapi/switcher-gitops/src/model"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -153,11 +154,37 @@ func TestUpdateAccount(t *testing.T) {
 
 		// Test
 		accountCreated.Branch = "new_branch"
-		updatedAccount, err := accountRepository.Update(accountCreated)
+		updatedAccount, err := accountRepository.UpdateByDomainEnvironment(accountCreated)
 
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, "new_branch", updatedAccount.Branch)
+	})
+
+	t.Run("Should update an account - updateDomainStatus", func(t *testing.T) {
+		// Given
+		account := givenAccount(true)
+		account.Domain.ID = "123-update-account-status"
+		accountCreated, _ := accountRepository.Create(&account)
+
+		// Test
+		updatedAccount, err := accountRepository.UpdateByDomainEnvironment(&model.Account{
+			Environment: accountCreated.Environment,
+			Domain: model.DomainDetails{
+				ID:       accountCreated.Domain.ID,
+				Status:   model.StatusOutSync,
+				Message:  "new_message",
+				LastDate: "new_last_date",
+			},
+		})
+
+		// Assert
+		assert.Nil(t, err)
+		assert.Equal(t, model.StatusOutSync, updatedAccount.Domain.Status)
+		assert.Equal(t, "new_message", updatedAccount.Domain.Message)
+		assert.Equal(t, "new_last_date", updatedAccount.Domain.LastDate)
+		assert.Equal(t, "Switcher GitOps", updatedAccount.Domain.Name)
+		assert.Equal(t, "switcherapi/switcher-gitops", updatedAccount.Repository)
 	})
 
 	t.Run("Should not update an account - not found", func(t *testing.T) {
@@ -166,7 +193,7 @@ func TestUpdateAccount(t *testing.T) {
 		account.Domain.ID = "non_existent_domain_id"
 
 		// Test
-		_, err := accountRepository.Update(&account)
+		_, err := accountRepository.UpdateByDomainEnvironment(&account)
 
 		// Assert
 		assert.NotNil(t, err)

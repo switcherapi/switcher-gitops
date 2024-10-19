@@ -3,16 +3,13 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/config"
 	"github.com/switcherapi/switcher-gitops/src/model"
-	"github.com/switcherapi/switcher-gitops/src/repository"
 	"github.com/switcherapi/switcher-gitops/src/utils"
 )
 
@@ -26,8 +23,9 @@ func TestCreateAccountHandler(t *testing.T) {
 
 	t.Run("Should create an account", func(t *testing.T) {
 		// Test
-		accountV1.Domain.ID = "123-controller-create-account"
-		payload, _ := json.Marshal(accountV1)
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-create-account"
+		payload, _ := json.Marshal(account1)
 		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
@@ -37,7 +35,7 @@ func TestCreateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusCreated, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Equal(t, account1.Repository, accountResponse.Repository)
 		assert.Contains(t, accountResponse.Token, "...")
 	})
 
@@ -54,10 +52,11 @@ func TestCreateAccountHandler(t *testing.T) {
 
 	t.Run("Should not create an account - account already exists", func(t *testing.T) {
 		// Create an account
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		accountController.accountRepository.Create(&account1)
 
 		// Test
-		payload, _ := json.Marshal(accountV1)
+		payload, _ := json.Marshal(account1)
 		req, _ := http.NewRequest(http.MethodPost, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
@@ -72,12 +71,13 @@ func TestFetchAccountHandler(t *testing.T) {
 
 	t.Run("Should fetch an account by domain ID / environment", func(t *testing.T) {
 		// Create an account
-		accountV1.Domain.ID = "123-controller-fetch-account"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-fetch-account"
+		accountController.accountRepository.Create(&account1)
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+account1.Domain.ID+"/"+account1.Environment, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -86,7 +86,7 @@ func TestFetchAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Equal(t, account1.Repository, accountResponse.Repository)
 		assert.Contains(t, accountResponse.Token, "...")
 	})
 
@@ -102,15 +102,22 @@ func TestFetchAccountHandler(t *testing.T) {
 	})
 
 	t.Run("Should fetch all accounts by domain ID", func(t *testing.T) {
-		// Create an account
-		accountV1.Domain.ID = "123-controller-fetch-all-accounts"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
-		accountV1.Environment = "staging"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		// Create accounts
+		domainId := "123-controller-fetch-all-accounts"
+
+		account1 := accountV1
+		account1.Domain.ID = domainId
+		account1.Environment = "default"
+		accountController.accountRepository.Create(&account1)
+
+		account2 := accountV1
+		account2.Domain.ID = domainId
+		account2.Environment = "staging"
+		accountController.accountRepository.Create(&account2)
 
 		// Test
 		payload := []byte("")
-		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+accountV1.Domain.ID, bytes.NewBuffer(payload))
+		req, _ := http.NewRequest(http.MethodGet, accountController.routeAccountPath+"/"+domainId, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -141,9 +148,10 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 	t.Run("Should update an account", func(t *testing.T) {
 		// Create an account
-		accountV1.Domain.ID = "123-controller-update-account"
-		accountV1.Environment = "default"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-update-account"
+		account1.Environment = "default"
+		accountController.accountRepository.Create(&account1)
 
 		// Update the account
 		accountV2.Domain.ID = "123-controller-update-account"
@@ -162,7 +170,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, accountResponse.Token)
-		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Equal(t, account1.Repository, accountResponse.Repository)
 		assert.Equal(t, model.StatusSynced, accountResponse.Domain.Status)
 		assert.Equal(t, "Updated successfully", accountResponse.Domain.Message)
 		assert.Equal(t, "5m", accountResponse.Settings.Window)
@@ -170,11 +178,12 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 	t.Run("Should update account token only", func(t *testing.T) {
 		// Create an account
-		accountV1.Domain.ID = "123-controller-update-account-token"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-update-account-token"
+		accountController.accountRepository.Create(&account1)
 
 		// Test
-		accountRequest := accountV1
+		accountRequest := account1
 		accountRequest.Token = "new-token"
 
 		payload, _ := json.Marshal(accountRequest)
@@ -187,11 +196,10 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
-		assert.Equal(t, accountV1.Repository, accountResponse.Repository)
+		assert.Equal(t, account1.Repository, accountResponse.Repository)
 		assert.Contains(t, accountResponse.Token, "...")
 
-		accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-		accountFromDb, _ := accountRepository.FetchByAccountId(accountResponse.ID.Hex())
+		accountFromDb, _ := accountController.accountRepository.FetchByAccountId(accountResponse.ID.Hex())
 
 		decryptedToken, _ := utils.Decrypt(accountFromDb.Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		assert.Equal(t, "new-token", decryptedToken)
@@ -210,14 +218,15 @@ func TestUpdateAccountHandler(t *testing.T) {
 
 	t.Run("Should not update an account - not found", func(t *testing.T) {
 		// Create an account
-		accountV1.Domain.ID = "123-controller-update-account-not-found"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-update-account-not-found"
+		accountController.accountRepository.Create(&account1)
 
 		// Replace the domain ID to force an error
-		accountV1.Domain.ID = "111"
+		account1.Domain.ID = "111"
 
 		// Test
-		payload, _ := json.Marshal(accountV1)
+		payload, _ := json.Marshal(account1)
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
@@ -237,12 +246,12 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 		account1 := accountV1
 		account1.Domain.ID = domainId
 		account1.Environment = "default"
-		accountController.CreateAccountHandler(givenAccountRequest(account1))
+		accountController.accountRepository.Create(&account1)
 
 		account2 := accountV1
 		account2.Domain.ID = domainId
 		account2.Environment = "staging"
-		accountController.CreateAccountHandler(givenAccountRequest(account2))
+		accountController.accountRepository.Create(&account2)
 
 		// Test
 		payload, _ := json.Marshal(AccountTokensRequest{
@@ -260,11 +269,10 @@ func TestUpdateAccountTokensHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Nil(t, err)
 
-		accountRepository := repository.NewAccountRepositoryMongo(mongoDb)
-		accountFromDb1 := accountRepository.FetchAllByDomainId(domainId)
+		accountFromDb := accountController.accountRepository.FetchAllByDomainId(domainId)
+		decryptedToken1, _ := utils.Decrypt(accountFromDb[0].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
+		decryptedToken2, _ := utils.Decrypt(accountFromDb[1].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 
-		decryptedToken1, _ := utils.Decrypt(accountFromDb1[0].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
-		decryptedToken2, _ := utils.Decrypt(accountFromDb1[1].Token, config.GetEnv("GIT_TOKEN_PRIVATE_KEY"))
 		assert.Equal(t, "new-token", decryptedToken1)
 		assert.Equal(t, "new-token", decryptedToken2)
 	})
@@ -317,11 +325,12 @@ func TestDeleteAccountHandler(t *testing.T) {
 
 	t.Run("Should delete an account by domain ID / environment", func(t *testing.T) {
 		// Create an account
-		accountV1.Domain.ID = "123-controller-delete-account"
-		accountController.CreateAccountHandler(givenAccountRequest(accountV1))
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-delete-account"
+		accountController.accountRepository.Create(&account1)
 
 		// Test
-		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/"+accountV1.Domain.ID+"/"+accountV1.Environment, nil)
+		req, _ := http.NewRequest(http.MethodDelete, accountController.routeAccountPath+"/"+account1.Domain.ID+"/"+account1.Environment, nil)
 		response := executeRequest(req, r, token)
 
 		// Assert
@@ -382,18 +391,4 @@ func TestUnnauthorizedAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, response.Code)
 		assert.Equal(t, "{\"error\":\"Invalid token\"}", response.Body.String())
 	})
-}
-
-// Helpers
-
-func givenAccountRequest(data model.Account) (*httptest.ResponseRecorder, *http.Request) {
-	w := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodPost, accountController.routeAccountPath, nil)
-
-	// Encode the account request as JSON
-	body, _ := json.Marshal(data)
-	r.Body = io.NopCloser(bytes.NewReader(body))
-	r.Header.Set("Content-Type", "application/json")
-
-	return w, r
 }

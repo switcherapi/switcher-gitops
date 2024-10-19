@@ -271,5 +271,9 @@ func (c *CoreHandler) updateDomainStatus(account model.Account, status string, m
 	account.Domain.Status = status
 	account.Domain.Message = message
 	account.Domain.LastDate = time.Now().Format(time.ANSIC)
-	c.accountRepository.Update(&account)
+
+	c.accountRepository.UpdateByDomainEnvironment(&model.Account{
+		Environment: account.Environment,
+		Domain:      account.Domain,
+	})
 }

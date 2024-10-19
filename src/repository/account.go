@@ -19,7 +19,7 @@ type AccountRepository interface {
 	FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error)
 	FetchAllByDomainId(domainId string) []model.Account
 	FetchAllAccounts() []model.Account
-	Update(account *model.Account) (*model.Account, error)
+	UpdateByDomainEnvironment(account *model.Account) (*model.Account, error)
 	DeleteByAccountId(accountId string) error
 	DeleteByDomainIdEnvironment(domainId string, environment string) error
 }
@@ -49,7 +49,7 @@ func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Accou
 	return account, nil
 }
 
-func (repo *AccountRepositoryMongo) Update(account *model.Account) (*model.Account, error) {
+func (repo *AccountRepositoryMongo) UpdateByDomainEnvironment(account *model.Account) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
@@ -169,24 +169,24 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 func getUpdateFields(account *model.Account) bson.M {
 	setMap := bson.M{}
 
-	setMap["repository"] = account.Repository
-	setMap["branch"] = account.Branch
-	setMap["path"] = account.Path
-	setMap["environment"] = account.Environment
-	setMap["domain.name"] = account.Domain.Name
-	setMap["settings.active"] = account.Settings.Active
-	setMap["settings.window"] = account.Settings.Window
-	setMap["settings.forcePrune"] = account.Settings.ForcePrune
-
+	setIfNotEmpty(setMap, "environment", account.Environment)
+	setIfNotEmpty(setMap, "repository", account.Repository)
+	setIfNotEmpty(setMap, "branch", account.Branch)
+	setIfNotEmpty(setMap, "path", account.Path)
 	setIfNotEmpty(setMap, "token", account.Token)
+
+	setIfNotEmpty(setMap, "domain.name", account.Domain.Name)
 	setIfNotEmpty(setMap, "domain.version", account.Domain.Version)
 	setIfNotEmpty(setMap, "domain.lastCommit", account.Domain.LastCommit)
 	setIfNotEmpty(setMap, "domain.lastDate", account.Domain.LastDate)
 	setIfNotEmpty(setMap, "domain.status", account.Domain.Status)
 	setIfNotEmpty(setMap, "domain.message", account.Domain.Message)
 
-	update := bson.M{"$set": setMap}
+	setIfNotEmpty(setMap, "settings.window", account.Settings.Window)
+	setIfNotEmpty(setMap, "settings.forcePrune", account.Settings.ForcePrune)
+	setIfNotEmpty(setMap, "settings.active", account.Settings.Active)
 
+	update := bson.M{"$set": setMap}
 	return update
 }
 
