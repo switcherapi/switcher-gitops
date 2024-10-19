@@ -18,31 +18,34 @@ import (
 type IGitService interface {
 	GetRepositoryData(environment string) (*model.RepositoryData, error)
 	PushChanges(environment string, content string) (string, error)
-	UpdateRepositorySettings(repository string, encryptedToken string, branch string)
+	UpdateRepositorySettings(repository string, encryptedToken string, branch string, path string)
 }
 
 type GitService struct {
 	repoURL        string
 	encryptedToken string
 	branchName     string
+	path           string
 }
 
-func NewGitService(repoURL string, encryptedToken string, branchName string) *GitService {
+func NewGitService(repoURL string, encryptedToken string, branchName string, path string) *GitService {
 	return &GitService{
 		repoURL:        repoURL,
 		encryptedToken: encryptedToken,
 		branchName:     branchName,
+		path:           sanitzePath(path),
 	}
 }
 
-func (g *GitService) UpdateRepositorySettings(repository string, encryptedToken string, branch string) {
+func (g *GitService) UpdateRepositorySettings(repository string, encryptedToken string, branch string, path string) {
 	g.repoURL = repository
 	g.encryptedToken = encryptedToken
 	g.branchName = branch
+	g.path = sanitzePath(path)
 }
 
 func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryData, error) {
-	commitHash, commitDate, content, err := g.getLastCommitData(model.FilePath + environment + ".json")
+	commitHash, commitDate, content, err := g.getLastCommitData(g.path + environment + ".json")
 
 	if err != nil {
 		return nil, err
@@ -63,7 +66,7 @@ func (g *GitService) PushChanges(environment string, content string) (string, er
 	r, _ := g.getRepository(fs)
 
 	// Write the content to the in-memory file
-	filePath := model.FilePath + environment + ".json"
+	filePath := g.path + environment + ".json"
 	file, _ := fs.Create(filePath)
 	file.Write([]byte(content))
 	file.Close()
@@ -157,4 +160,12 @@ func (g *GitService) getAuth() *http.BasicAuth {
 		Username: config.GetEnv("GIT_USER"),
 		Password: decryptedToken,
 	}
+}
+
+func sanitzePath(path string) string {
+	if path != "" {
+		path += "/"
+	}
+
+	return path
 }

@@ -24,14 +24,16 @@ func TestNewGitService(t *testing.T) {
 	repoURL := "repoURL"
 	encryptedToken := "encryptedToken"
 	branchName := "main"
+	path := "snapshots"
 
 	// Test
-	gitService := NewGitService(repoURL, encryptedToken, branchName)
+	gitService := NewGitService(repoURL, encryptedToken, branchName, path)
 
 	// Assert
 	assert.Equal(t, repoURL, gitService.repoURL)
 	assert.Equal(t, encryptedToken, gitService.encryptedToken)
 	assert.Equal(t, branchName, gitService.branchName)
+	assert.Equal(t, path+"/", gitService.path)
 }
 
 func TestUpdateRepositorySettings(t *testing.T) {
@@ -39,15 +41,17 @@ func TestUpdateRepositorySettings(t *testing.T) {
 	repoURL := "repoURL"
 	encryptedToken := "encryptedToken"
 	branchName := "main"
-	gitService := NewGitService(repoURL, encryptedToken, branchName)
+	path := "snapshots"
+	gitService := NewGitService(repoURL, encryptedToken, branchName, path)
 
 	// Test
-	gitService.UpdateRepositorySettings("newRepoURL", "newEncryptedToken", "newBranch")
+	gitService.UpdateRepositorySettings("newRepoURL", "newEncryptedToken", "newBranch", "newPath")
 
 	// Assert
 	assert.Equal(t, "newRepoURL", gitService.repoURL)
 	assert.Equal(t, "newEncryptedToken", gitService.encryptedToken)
 	assert.Equal(t, "newBranch", gitService.branchName)
+	assert.Equal(t, "newPath/", gitService.path)
 }
 
 func TestGetRepositoryData(t *testing.T) {
@@ -60,7 +64,8 @@ func TestGetRepositoryData(t *testing.T) {
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
 			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
-			appConfig.GetEnv("GIT_BRANCH"))
+			appConfig.GetEnv("GIT_BRANCH"),
+			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
 		repositoryData, err := gitService.GetRepositoryData("default")
@@ -77,7 +82,8 @@ func TestGetRepositoryData(t *testing.T) {
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
 			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
-			appConfig.GetEnv("GIT_BRANCH"))
+			appConfig.GetEnv("GIT_BRANCH"),
+			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
 		repositoryData, err := gitService.GetRepositoryData("invalid")
@@ -92,7 +98,8 @@ func TestGetRepositoryData(t *testing.T) {
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
 			"invalid",
-			appConfig.GetEnv("GIT_BRANCH"))
+			appConfig.GetEnv("GIT_BRANCH"),
+			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
 		repositoryData, err := gitService.GetRepositoryData("default")
@@ -115,7 +122,8 @@ func TestPushChanges(t *testing.T) {
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
 			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
-			branchName)
+			branchName,
+			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
 		commitHash, err := gitService.PushChanges("default", "content")
@@ -137,7 +145,8 @@ func TestPushChanges(t *testing.T) {
 		gitService := NewGitService(
 			appConfig.GetEnv("GIT_REPO_URL"),
 			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN_READ_ONLY"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
-			appConfig.GetEnv("GIT_BRANCH"))
+			appConfig.GetEnv("GIT_BRANCH"),
+			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
 		commitHash, err := gitService.PushChanges("default", "content")

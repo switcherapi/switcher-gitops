@@ -82,6 +82,42 @@
 					"response": []
 				},
 				{
+					"name": "Update (path)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{gitopsToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"repository\": \"{{github_url}}\",\r\n\t\"branch\": \"{{github_branch}}\",\r\n    \"path\": \"snapshots/production\",\r\n    \"environment\": \"{{environment}}\",\r\n    \"domain\": {\r\n\t\t\"id\": \"{{domain_id}}\",\r\n        \"name\": \"GitOps\"\r\n    },\r\n    \"settings\": {\r\n        \"active\": true,\r\n        \"window\": \"30s\",\r\n        \"forceprune\": true\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/account",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update (token)",
 					"request": {
 						"auth": {

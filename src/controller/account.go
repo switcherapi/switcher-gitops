@@ -83,7 +83,7 @@ func (controller *AccountController) CreateAccountHandler(w http.ResponseWriter,
 	}
 
 	// Initialize account handler
-	gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch)
+	gitService := core.NewGitService(accountCreated.Repository, accountCreated.Token, accountCreated.Branch, accountCreated.Path)
 	go controller.coreHandler.StartAccountHandler(accountCreated.ID.Hex(), gitService)
 
 	opaqueTokenFromResponse(accountCreated)

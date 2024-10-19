@@ -575,7 +575,7 @@ func (f *FakeGitService) PushChanges(environment string, content string) (string
 	return f.lastCommit, nil
 }
 
-func (f *FakeGitService) UpdateRepositorySettings(repository string, token string, branch string) {
+func (f *FakeGitService) UpdateRepositorySettings(repository string, token string, branch string, path string) {
 	// Do nothing
 }
 
