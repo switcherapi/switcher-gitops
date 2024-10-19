@@ -170,7 +170,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"domainId\": \"{{domain_id}}\",\r\n\t\"token\": \"{{github_pat}}\",\r\n    \"environments\": [\r\n        \"default\",\r\n        \"staging\"\r\n    ]\r\n}",
+							"raw": "{\r\n\t\"token\": \"{{github_pat}}\",\r\n    \"environments\": [\r\n        \"default\",\r\n        \"staging\"\r\n    ]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -178,12 +178,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{url}}/account",
+							"raw": "{{url}}/account/tokens/{{domain_id}}",
 							"host": [
 								"{{url}}"
 							],
 							"path": [
-								"account"
+								"account",
+								"tokens",
+								"{{domain_id}}"
 							]
 						}
 					},
