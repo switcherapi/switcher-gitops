@@ -154,12 +154,12 @@ func TestUpdateAccountHandler(t *testing.T) {
 		accountController.accountRepository.Create(&account1)
 
 		// Update the account
-		accountV2.Domain.ID = "123-controller-update-account"
-		accountV2.Environment = "default"
-		accountV2.Domain.Message = "Updated successfully"
+		account1.Domain.Message = "Updated successfully"
+		account1.Settings.Window = "5m"
+		account1.Settings.Active = false
 
 		// Test
-		payload, _ := json.Marshal(accountV2)
+		payload, _ := json.Marshal(account1)
 		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
 		response := executeRequest(req, r, token)
 
@@ -174,6 +174,7 @@ func TestUpdateAccountHandler(t *testing.T) {
 		assert.Equal(t, model.StatusSynced, accountResponse.Domain.Status)
 		assert.Equal(t, "Updated successfully", accountResponse.Domain.Message)
 		assert.Equal(t, "5m", accountResponse.Settings.Window)
+		assert.False(t, accountResponse.Settings.Active)
 	})
 
 	t.Run("Should update account token only", func(t *testing.T) {
