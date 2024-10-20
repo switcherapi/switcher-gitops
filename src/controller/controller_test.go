@@ -107,18 +107,3 @@ var accountV1 = model.Account{
 		ForcePrune: false,
 	},
 }
-
-var accountV2 = model.Account{
-	Repository:  "switcherapi/switcher-gitops",
-	Branch:      "main",
-	Environment: "default",
-	Domain: model.DomainDetails{
-		ID:   "123-controller-test",
-		Name: "Switcher GitOps",
-	},
-	Settings: model.Settings{
-		Active:     false,
-		Window:     "5m",
-		ForcePrune: true,
-	},
-}

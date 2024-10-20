@@ -183,8 +183,9 @@ func getUpdateFields(account *model.Account) bson.M {
 	setIfNotEmpty(setMap, "domain.message", account.Domain.Message)
 
 	setIfNotEmpty(setMap, "settings.window", account.Settings.Window)
-	setIfNotEmpty(setMap, "settings.forcePrune", account.Settings.ForcePrune)
-	setIfNotEmpty(setMap, "settings.active", account.Settings.Active)
+
+	setMap["settings.active"] = account.Settings.Active
+	setMap["settings.forcePrune"] = account.Settings.ForcePrune
 
 	update := bson.M{"$set": setMap}
 	return update
