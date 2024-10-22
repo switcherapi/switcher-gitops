@@ -64,7 +64,7 @@ func givenAccount() model.Account {
 			Status:     model.StatusOutSync,
 			Message:    "",
 		},
-		Settings: model.Settings{
+		Settings: &model.Settings{
 			Active:     true,
 			Window:     "5s",
 			ForcePrune: false,
