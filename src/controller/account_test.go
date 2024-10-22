@@ -177,6 +177,41 @@ func TestUpdateAccountHandler(t *testing.T) {
 		assert.False(t, accountResponse.Settings.Active)
 	})
 
+	t.Run("Should update an account (only message) - ignore settings", func(t *testing.T) {
+		// Create an account
+		account1 := accountV1
+		account1.Domain.ID = "123-controller-update-account-message"
+		account1.Environment = "default"
+		account1.Settings.Active = true
+		account1.Settings.Window = "1m"
+		accountController.accountRepository.Create(&account1)
+
+		// Update the account
+		account1.Domain.Message = "Updated successfully"
+
+		// Test
+		payload, _ := json.Marshal(&model.Account{
+			Environment: account1.Environment,
+			Domain:      account1.Domain,
+		})
+
+		req, _ := http.NewRequest(http.MethodPut, accountController.routeAccountPath, bytes.NewBuffer(payload))
+		response := executeRequest(req, r, token)
+
+		// Assert
+		var accountResponse model.Account
+		err := json.NewDecoder(response.Body).Decode(&accountResponse)
+
+		assert.Equal(t, http.StatusOK, response.Code)
+		assert.Nil(t, err)
+		assert.NotEmpty(t, accountResponse.Token)
+		assert.Equal(t, account1.Repository, accountResponse.Repository)
+		assert.Equal(t, model.StatusSynced, accountResponse.Domain.Status)
+		assert.Equal(t, "Updated successfully", accountResponse.Domain.Message)
+		assert.Equal(t, "1m", accountResponse.Settings.Window)
+		assert.True(t, accountResponse.Settings.Active)
+	})
+
 	t.Run("Should update account token only", func(t *testing.T) {
 		// Create an account
 		account1 := accountV1

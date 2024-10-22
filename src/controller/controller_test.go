@@ -101,7 +101,7 @@ var accountV1 = model.Account{
 		Status:     model.StatusSynced,
 		Message:    "Synced successfully",
 	},
-	Settings: model.Settings{
+	Settings: &model.Settings{
 		Active:     true,
 		Window:     "10m",
 		ForcePrune: false,

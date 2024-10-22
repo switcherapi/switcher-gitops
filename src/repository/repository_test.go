@@ -51,7 +51,7 @@ func givenAccount(active bool) model.Account {
 			Status:     model.StatusSynced,
 			Message:    "Synced successfully",
 		},
-		Settings: model.Settings{
+		Settings: &model.Settings{
 			Active:     active,
 			Window:     "10m",
 			ForcePrune: false,

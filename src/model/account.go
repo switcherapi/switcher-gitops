@@ -26,7 +26,7 @@ type Account struct {
 	Token       string             `json:"token"`
 	Environment string             `json:"environment"`
 	Domain      DomainDetails      `json:"domain"`
-	Settings    Settings           `json:"settings"`
+	Settings    *Settings          `json:"settings"`
 }
 
 type DomainDetails struct {
