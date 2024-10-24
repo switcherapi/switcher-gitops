@@ -64,7 +64,7 @@ func TestAccountHandlerSyncRepository(t *testing.T) {
 	t.Run("Should sync successfully when API has a newer version", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeGitService.lastCommit = "111"
+		fakeGitService.existingData.CommitHash = "111"
 
 		fakeApiService := NewFakeApiService()
 		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
@@ -155,7 +155,7 @@ func TestAccountHandlerSyncRepository(t *testing.T) {
 	t.Run("Should sync successfully when repository is up to date but not synced", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
+		fakeGitService.existingData.Content = `{
 			"domain": {
 				"group": [{
 					"name": "Release 1",
@@ -178,6 +178,54 @@ func TestAccountHandlerSyncRepository(t *testing.T) {
 
 		account := givenAccount()
 		account.Domain.ID = "123-up-to-date-not-synced"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
+	t.Run("Should sync successfully when account was just created", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.errorGetRepoData = "file not found"
+		fakeGitService.newData = fakeGitService.existingData
+		fakeGitService.newData.Content = `{
+			"domain": {
+				"group": [{
+					"name": "Release 1",
+					"description": "Showcase configuration",
+					"activated": true,
+					"config": [{
+						"key": "MY_SWITCHER",
+						"description": "",
+						"activated": true,
+						"strategies": [],
+						"components": [
+							"switcher-playground"
+						]
+					}]
+				}]
+			}
+		}`
+
+		fakeApiService := NewFakeApiService()
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-just-created"
 		accountCreated, _ := coreHandler.accountRepository.Create(&account)
 
 		// Test
@@ -231,7 +279,7 @@ func TestAccountHandlerSyncAPI(t *testing.T) {
 	t.Run("Should sync and prune successfully when API is out of sync", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
+		fakeGitService.existingData.Content = `{
 			"domain": {
 				"group": []
 			}
@@ -265,7 +313,7 @@ func TestAccountHandlerSyncAPI(t *testing.T) {
 	t.Run("Should sync and not prune when API is out of sync", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
+		fakeGitService.existingData.Content = `{
 			"domain": {
 				"group": []
 			}
@@ -347,7 +395,7 @@ func TestAccountHandlerNotSync(t *testing.T) {
 	t.Run("Should not sync when fetch repository data returns a malformed JSON content", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
-		fakeGitService.content = `{
+		fakeGitService.existingData.Content = `{
 			"domain": {
 				"group": [{
 					"name": "Release 1",
@@ -509,6 +557,37 @@ func TestAccountHandlerNotSync(t *testing.T) {
 
 		tearDown()
 	})
+
+	t.Run("Should not sync when account was just created - failed to fetch API", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeGitService.errorGetRepoData = "file not found"
+		fakeGitService.newData = fakeGitService.existingData
+
+		fakeApiService := NewFakeApiService()
+		fakeApiService.throwErrorSnapshot = true
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, NewComparatorService())
+
+		account := givenAccount()
+		account.Domain.ID = "123-just-created-error-fetch-api"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Failed to fetch repository data")
+		assert.Equal(t, "", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 0, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
 }
 
 // Helpers
@@ -521,9 +600,8 @@ func tearDown() {
 // Fakes
 
 type FakeGitService struct {
-	lastCommit       string
-	date             string
-	content          string
+	existingData     model.RepositoryData
+	newData          model.RepositoryData
 	status           string
 	errorPushChanges string
 	errorGetRepoData string
@@ -531,26 +609,28 @@ type FakeGitService struct {
 
 func NewFakeGitService() *FakeGitService {
 	return &FakeGitService{
-		lastCommit: "123",
-		date:       time.Now().Format(time.ANSIC),
-		content: `{
-			"domain": {
-				"group": [{
-					"name": "Release 1",
-					"description": "Showcase configuration",
-					"activated": true,
-					"config": [{
-						"key": "MY_SWITCHER",
-						"description": "",
-						"activated": false,
-						"strategies": [],
-						"components": [
-							"switcher-playground"
-						]
+		existingData: model.RepositoryData{
+			CommitHash: "123",
+			CommitDate: time.Now().Format(time.ANSIC),
+			Content: `{
+				"domain": {
+					"group": [{
+						"name": "Release 1",
+						"description": "Showcase configuration",
+						"activated": true,
+						"config": [{
+							"key": "MY_SWITCHER",
+							"description": "",
+							"activated": false,
+							"strategies": [],
+							"components": [
+								"switcher-playground"
+							]
+						}]
 					}]
-				}]
-			}
-		}`,
+				}
+			}`,
+		},
 		status: model.StatusOutSync,
 	}
 }
@@ -560,19 +640,19 @@ func (f *FakeGitService) GetRepositoryData(environment string) (*model.Repositor
 		return nil, errors.New(f.errorGetRepoData)
 	}
 
-	return &model.RepositoryData{
-		CommitHash: f.lastCommit,
-		CommitDate: f.date,
-		Content:    f.content,
-	}, nil
+	return &f.existingData, nil
 }
 
-func (f *FakeGitService) PushChanges(environment string, content string) (string, error) {
+func (f *FakeGitService) CreateRepositoryData(environment string, content string) (*model.RepositoryData, error) {
+	return &f.newData, nil
+}
+
+func (f *FakeGitService) PushChanges(environment string, content string, message string) (*model.RepositoryData, error) {
 	if f.errorPushChanges != "" {
-		return "", errors.New(f.errorPushChanges)
+		return nil, errors.New(f.errorPushChanges)
 	}
 
-	return f.lastCommit, nil
+	return &f.existingData, nil
 }
 
 func (f *FakeGitService) UpdateRepositorySettings(repository string, token string, branch string, path string) {

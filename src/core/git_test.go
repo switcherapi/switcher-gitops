@@ -126,18 +126,42 @@ func TestPushChanges(t *testing.T) {
 			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
-		commitHash, err := gitService.PushChanges("default", "content")
+		repositoryData, err := gitService.PushChanges("default", "content", "updated default.json")
+		data, _ := gitService.GetRepositoryData("default")
+		deleteBranch(branchName)
 
 		// Assert
 		assert.Nil(t, err)
-		assert.NotEmpty(t, commitHash)
+		assert.NotNil(t, repositoryData)
 
+		assert.Equal(t, repositoryData.CommitHash, data.CommitHash)
+		assert.Equal(t, repositoryData.CommitDate[0:10], data.CommitDate[0:10])
+		assert.Equal(t, repositoryData.Content, data.Content)
+	})
+
+	t.Run("Should push changes to repository for a newly created account", func(t *testing.T) {
+		// Given
+		branchName := "test-branch-" + time.Now().Format("20060102150405")
+		createBranch(branchName)
+
+		gitService := NewGitService(
+			appConfig.GetEnv("GIT_REPO_URL"),
+			utils.Encrypt(appConfig.GetEnv("GIT_TOKEN"), appConfig.GetEnv("GIT_TOKEN_PRIVATE_KEY")),
+			branchName,
+			"path/to/snapshots")
+
+		// Test
+		repositoryData, err := gitService.PushChanges("default", "content", "created default.json")
 		data, _ := gitService.GetRepositoryData("default")
-		assert.Equal(t, commitHash, data.CommitHash)
-		assert.Equal(t, "content", data.Content)
-
-		// Clean up
 		deleteBranch(branchName)
+
+		// Assert
+		assert.Nil(t, err)
+		assert.NotNil(t, repositoryData)
+
+		assert.Equal(t, repositoryData.CommitHash, data.CommitHash)
+		assert.Equal(t, repositoryData.CommitDate[0:10], data.CommitDate[0:10])
+		assert.Equal(t, repositoryData.Content, data.Content)
 	})
 
 	t.Run("Should fail to push changes to repository - no write access", func(t *testing.T) {
@@ -149,7 +173,7 @@ func TestPushChanges(t *testing.T) {
 			appConfig.GetEnv("GIT_PATH"))
 
 		// Test
-		commitHash, err := gitService.PushChanges("default", "content")
+		commitHash, err := gitService.PushChanges("default", "content", "")
 
 		// Assert
 		assert.NotNil(t, err)

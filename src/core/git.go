@@ -17,7 +17,7 @@ import (
 
 type IGitService interface {
 	GetRepositoryData(environment string) (*model.RepositoryData, error)
-	PushChanges(environment string, content string) (string, error)
+	PushChanges(environment string, content string, message string) (*model.RepositoryData, error)
 	UpdateRepositorySettings(repository string, encryptedToken string, branch string, path string)
 }
 
@@ -58,7 +58,7 @@ func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryDat
 	}, nil
 }
 
-func (g *GitService) PushChanges(environment string, content string) (string, error) {
+func (g *GitService) PushChanges(environment string, content string, message string) (*model.RepositoryData, error) {
 	// Create an in-memory file system
 	fs := memfs.New()
 
@@ -78,7 +78,7 @@ func (g *GitService) PushChanges(environment string, content string) (string, er
 	w.Add(filePath)
 
 	// Commit the changes
-	commit, _ := w.Commit("[switcher-gitops] updated "+environment+".json", g.createCommitOptions())
+	commit, _ := w.Commit("[switcher-gitops] "+message, g.createCommitOptions())
 
 	// Push the changes
 	err := r.Push(&git.PushOptions{
@@ -87,10 +87,14 @@ func (g *GitService) PushChanges(environment string, content string) (string, er
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return commit.String(), nil
+	return &model.RepositoryData{
+		CommitHash: commit.String(),
+		CommitDate: time.Now().Format(time.ANSIC),
+		Content:    content,
+	}, nil
 }
 
 func (g *GitService) createCommitOptions() *git.CommitOptions {

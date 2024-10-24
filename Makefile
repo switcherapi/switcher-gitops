@@ -22,4 +22,6 @@ test:
 
 cover:
 	go test -p 1 -coverprofile="coverage.out" ./...
+
+cover-html:
 	go tool cover -html="coverage.out"
