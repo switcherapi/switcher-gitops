@@ -268,7 +268,16 @@ func (c *CoreHandler) createRepositoryData(account model.Account, gitService IGi
 		return nil, err
 	}
 
-	return gitService.PushChanges(account.Environment, snapshotJsonFromApi, fmt.Sprintf("created %s.json", account.Environment))
+	// Convert API JSON to model.Snapshot
+	snapshotApi := c.apiService.NewDataFromJson([]byte(snapshotJsonFromApi))
+	snapshot := snapshotApi.Snapshot
+
+	// Remove version from domain
+	snapshotContent := snapshot
+	snapshotContent.Domain.Version = 0
+
+	return gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent),
+		fmt.Sprintf("created %s.json", account.Environment))
 }
 
 func (c *CoreHandler) isOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
