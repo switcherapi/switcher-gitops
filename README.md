@@ -71,7 +71,7 @@ You might need to remove mongodb setting from docker-compose.yml if launching th
 
 1. Clone the repository
 2. Configure the environment variables in the `.env.test` file
-3. `make run:test` to start the application
+3. `make run-test` to start the application
 
 # Integrated tests
 

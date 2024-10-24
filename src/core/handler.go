@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/config"
@@ -89,7 +90,7 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		gitService.UpdateRepositorySettings(account.Repository, account.Token, account.Branch, account.Path)
 
 		// Fetch repository data
-		repositoryData, err := gitService.GetRepositoryData(account.Environment)
+		repositoryData, err := c.getRepositoryData(gitService, account)
 
 		if err != nil {
 			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error(),
@@ -123,6 +124,16 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 		timeWindow, unitWindow := utils.GetTimeWindow(account.Settings.Window)
 		time.Sleep(time.Duration(timeWindow) * unitWindow)
 	}
+}
+
+func (c *CoreHandler) getRepositoryData(gitService IGitService, account *model.Account) (*model.RepositoryData, error) {
+	repositoryData, err := gitService.GetRepositoryData(account.Environment)
+
+	if err != nil && err.Error() == "file not found" {
+		repositoryData, err = c.createRepositoryData(*account, gitService)
+	}
+
+	return repositoryData, err
 }
 
 func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.RepositoryData, gitService IGitService) {
@@ -234,7 +245,8 @@ func (c *CoreHandler) pushChangesToRepository(account model.Account, snapshot mo
 	snapshotContent.Domain.Version = 0
 
 	// Push changes to repository
-	lastCommit, err := gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent))
+	repositoryData, err := gitService.PushChanges(account.Environment, utils.ToJsonFromObject(snapshotContent),
+		fmt.Sprintf("updated %s.json", account.Environment))
 
 	if err != nil {
 		return account, err
@@ -242,9 +254,21 @@ func (c *CoreHandler) pushChangesToRepository(account model.Account, snapshot mo
 
 	// Update domain
 	account.Domain.Version = snapshot.Domain.Version
-	account.Domain.LastCommit = lastCommit
+	account.Domain.LastCommit = repositoryData.CommitHash
 
 	return account, nil
+}
+
+func (c *CoreHandler) createRepositoryData(account model.Account, gitService IGitService) (*model.RepositoryData, error) {
+	utils.LogInfo("[%s - %s (%s)] Creating repository data", account.ID.Hex(), account.Domain.Name, account.Environment)
+
+	snapshotJsonFromApi, err := c.apiService.FetchSnapshot(account.Domain.ID, account.Environment)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return gitService.PushChanges(account.Environment, snapshotJsonFromApi, fmt.Sprintf("created %s.json", account.Environment))
 }
 
 func (c *CoreHandler) isOutSync(account model.Account, lastCommit string, snapshotVersionPayload string) bool {
