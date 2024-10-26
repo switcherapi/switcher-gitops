@@ -25,6 +25,7 @@ func InitDb() *mongo.Database {
 	err = client.Ping(context.Background(), nil)
 	if err != nil {
 		utils.LogError("Error connecting to MongoDB: %s", err.Error())
+		return nil
 	}
 
 	utils.LogInfo("Connected to MongoDB!")
