@@ -97,19 +97,26 @@ func startServerWithSsl(routerHandlers *mux.Router) *http.Server {
 }
 
 func initRoutes(db *mongo.Database, coreHandler *core.CoreHandler) *mux.Router {
-	accountRepository := repository.NewAccountRepositoryMongo(db)
+	r := mux.NewRouter()
 
 	apiController := controller.NewApiController(coreHandler)
-	accountController := controller.NewAccountController(accountRepository, coreHandler)
-
-	r := mux.NewRouter()
 	apiController.RegisterRoutes(r)
-	accountController.RegisterRoutes(r)
+
+	if db != nil {
+		accountRepository := repository.NewAccountRepositoryMongo(db)
+		accountController := controller.NewAccountController(accountRepository, coreHandler)
+		accountController.RegisterRoutes(r)
+	}
 
 	return r
 }
 
 func initCoreHandler(db *mongo.Database) *core.CoreHandler {
+	var coreHandler *core.CoreHandler
+	if db == nil {
+		return core.NewCoreHandler(nil, nil, nil)
+	}
+
 	accountRepository := repository.NewAccountRepositoryMongo(db)
 	comparatorService := core.NewComparatorService()
 	apiService := core.NewApiService(
@@ -118,7 +125,7 @@ func initCoreHandler(db *mongo.Database) *core.CoreHandler {
 		config.GetEnv("SWITCHER_API_CA_CERT"),
 	)
 
-	coreHandler := core.NewCoreHandler(accountRepository, apiService, comparatorService)
+	coreHandler = core.NewCoreHandler(accountRepository, apiService, comparatorService)
 	coreHandler.InitCoreHandlerGoroutine()
 
 	return coreHandler
