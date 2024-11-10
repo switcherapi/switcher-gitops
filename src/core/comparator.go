@@ -27,6 +27,7 @@ const (
 	GROUP     DiffResult = "GROUP"
 	CONFIG    DiffResult = "CONFIG"
 	STRATEGY  DiffResult = "STRATEGY"
+	RELAY     DiffResult = "RELAY"
 	COMPONENT DiffResult = "COMPONENT"
 )
 
@@ -115,10 +116,12 @@ func checkConfigDiff(leftGroup model.Group, rightGroup model.Group, diffResult *
 			if diffType == CHANGED {
 				diffFound = compareAndUpdateBool(leftConfig.Activated, rightConfig.Activated, diffFound, &modelDiffFound.Activated)
 				diffFound = compareAndUpdateString(leftConfig.Description, rightConfig.Description, diffFound, &modelDiffFound.Description)
+				diffFound = compareAndUpdateRelay(leftConfig, rightConfig, diffFound, &modelDiffFound)
 			}
 
 			checkStrategyDiff(leftConfig, rightConfig, leftGroup, diffResult, diffType)
 			checkComponentsDiff(leftConfig, rightConfig, leftGroup, diffResult, diffType)
+			checkRelayDiff(leftConfig, rightConfig, leftGroup, diffResult, diffType)
 
 			if diffFound {
 				appendDiffResults(string(diffType), string(CONFIG), []string{leftGroup.Name, leftConfig.Key}, modelDiffFound, diffResult)
@@ -127,7 +130,9 @@ func checkConfigDiff(leftGroup model.Group, rightGroup model.Group, diffResult *
 	}
 }
 
-func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGroup model.Group, diffResult *model.DiffResult, diffType DiffType) {
+func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGroup model.Group,
+	diffResult *model.DiffResult, diffType DiffType) {
+
 	if len(leftConfig.Strategies) == 0 {
 		return
 	}
@@ -135,9 +140,11 @@ func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGr
 	for _, leftStrategy := range leftConfig.Strategies {
 		if !slices.Contains(model.StrategyNames(rightConfig.Strategies), leftStrategy.Strategy) {
 			if diffType == NEW {
-				appendDiffResults(string(diffType), string(STRATEGY), []string{leftGroup.Name, leftConfig.Key}, leftStrategy, diffResult)
+				appendDiffResults(string(diffType), string(STRATEGY),
+					[]string{leftGroup.Name, leftConfig.Key}, leftStrategy, diffResult)
 			} else if diffType == DELETED {
-				appendDiffResults(string(diffType), string(STRATEGY), []string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, nil, diffResult)
+				appendDiffResults(string(diffType), string(STRATEGY),
+					[]string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, nil, diffResult)
 			}
 		} else {
 			rightStrategy := model.GetStrategyByName(rightConfig.Strategies, leftStrategy.Strategy)
@@ -155,6 +162,19 @@ func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGr
 					[]string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, modelDiffFound, diffResult)
 			}
 		}
+	}
+}
+
+func checkRelayDiff(leftConfig model.Config, rightConfig model.Config, leftGroup model.Group,
+	diffResult *model.DiffResult, diffType DiffType) {
+
+	if diffType != DELETED {
+		return
+	}
+
+	if leftConfig.Relay != nil && rightConfig.Relay == nil {
+		appendDiffResults(string(DELETED), string(RELAY),
+			[]string{leftGroup.Name, leftConfig.Key}, nil, diffResult)
 	}
 }
 
@@ -176,6 +196,21 @@ func checkComponentsDiff(leftConfig model.Config, rightConfig model.Config, left
 		appendDiffResults(string(diffType), string(COMPONENT),
 			[]string{leftGroup.Name, leftConfig.Key}, diff, diffResult)
 	}
+}
+
+func compareAndUpdateRelay(leftConfig model.Config, rightConfig model.Config, diffFound bool, modelDiffFound *model.Config) bool {
+	if leftConfig.Relay == nil || rightConfig.Relay == nil {
+		return diffFound
+	}
+
+	modelDiffFound.Relay = &model.Relay{}
+	diffFound = compareAndUpdateString(leftConfig.Relay.Type, rightConfig.Relay.Type, diffFound, &modelDiffFound.Relay.Type)
+	diffFound = compareAndUpdateString(leftConfig.Relay.Method, rightConfig.Relay.Method, diffFound, &modelDiffFound.Relay.Method)
+	diffFound = compareAndUpdateString(leftConfig.Relay.Endpoint, rightConfig.Relay.Endpoint, diffFound, &modelDiffFound.Relay.Endpoint)
+	diffFound = compareAndUpdateString(leftConfig.Relay.Description, rightConfig.Relay.Description, diffFound, &modelDiffFound.Relay.Description)
+	diffFound = compareAndUpdateBool(leftConfig.Relay.Activated, rightConfig.Relay.Activated, diffFound, &modelDiffFound.Relay.Activated)
+
+	return diffFound
 }
 
 func compareAndUpdateBool(left *bool, right *bool, diffFound bool, modelDiffFound **bool) bool {
