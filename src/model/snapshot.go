@@ -17,6 +17,7 @@ type Config struct {
 	Description string     `json:"description,omitempty"`
 	Activated   *bool      `json:"activated,omitempty"`
 	Strategies  []Strategy `json:"strategies,omitempty"`
+	Relay       *Relay     `json:"relay,omitempty"`
 	Components  []string   `json:"components,omitempty"`
 }
 
@@ -25,6 +26,14 @@ type Strategy struct {
 	Activated *bool    `json:"activated,omitempty"`
 	Operation string   `json:"operation,omitempty"`
 	Values    []string `json:"values,omitempty"`
+}
+
+type Relay struct {
+	Type        string `json:"type,omitempty"`
+	Method      string `json:"method,omitempty"`
+	Endpoint    string `json:"endpoint,omitempty"`
+	Activated   *bool  `json:"activated,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 type Snapshot struct {

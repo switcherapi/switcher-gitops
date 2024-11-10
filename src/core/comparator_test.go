@@ -199,6 +199,42 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
+	t.Run("Should return changes in config relay", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_config_relay.json")
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/changed_config_relay.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "CHANGED",
+				"diff": "CONFIG",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_4"
+				],
+				"content": {
+					"relay": {
+						"type": "VALIDATION",
+						"method": "GET",
+						"endpoint": "https://localhost:3000/v1/relay",
+						"activated": false,
+						"description": "Changed Relay to localhost"
+					}
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
 	t.Run("Should return changes in config - missing description assume not changed", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
@@ -294,6 +330,46 @@ func TestCheckConfigSnapshot(t *testing.T) {
 		]}`, utils.ToJsonFromObject(actual))
 	})
 
+	t.Run("Should return new config with relay", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_config_relay.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "NEW",
+				"diff": "CONFIG",
+				"path": [
+					"Release 1"
+				],
+				"content": {
+					"key": "MY_SWITCHER_4",
+					"activated": true,
+					"relay": {
+						"type": "NOTIFICATION",
+						"method": "POST",
+						"endpoint": "https://localhost:3000/relay",
+						"description": "Relay to localhost",
+						"activated": true
+					},
+					"components": [
+						"benchmark"
+					]
+				}
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
 	t.Run("Should return new config with strategy", func(t *testing.T) {
 		// Given
 		jsonApi := utils.ReadJsonFromFile(DEFAULT_JSON)
@@ -357,6 +433,34 @@ func TestCheckConfigSnapshot(t *testing.T) {
 				"path": [
 					"Release 1",
 					"MY_SWITCHER_3"
+				],
+				"content": null
+			}
+		]}`, utils.ToJsonFromObject(actual))
+	})
+
+	t.Run("Should return deleted config relay", func(t *testing.T) {
+		// Given
+		jsonApi := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_config_relay.json")
+		jsonRepo := utils.ReadJsonFromFile("../../resources/fixtures/comparator/new_config.json")
+		fromApi := c.NewSnapshotFromJson([]byte(jsonApi))
+		fromRepo := c.NewSnapshotFromJson([]byte(jsonRepo))
+
+		// Test Check/Merge changes
+		diffChanged := c.CheckSnapshotDiff(fromApi, fromRepo, CHANGED)
+		diffNew := c.CheckSnapshotDiff(fromRepo, fromApi, NEW)
+		diffDeleted := c.CheckSnapshotDiff(fromApi, fromRepo, DELETED)
+		actual := c.MergeResults([]model.DiffResult{diffChanged, diffNew, diffDeleted})
+
+		assert.NotNil(t, actual)
+		assert.JSONEq(t, `{
+		"changes": [
+			{
+				"action": "DELETED",
+				"diff": "RELAY",
+				"path": [
+					"Release 1",
+					"MY_SWITCHER_4"
 				],
 				"content": null
 			}
