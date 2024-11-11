@@ -221,6 +221,13 @@ func createQuery(domainId string, environment string) string {
                         operation
                         values
                     }
+					relay {
+						type
+						method
+						endpoint
+						description
+						activated
+					}
                     components
                 }
             }

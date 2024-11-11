@@ -12,10 +12,14 @@ import (
 )
 
 const SWITCHER_API_JWT_SECRET = "SWITCHER_API_JWT_SECRET"
+const DEFAULT_SNAPSHOT = "../../resources/fixtures/api/default_snapshot.json"
+const DEFAULT_SNAPSHOT_INVALID = "../../resources/fixtures/api/error_invalid_domain.json"
+const DEFAULT_SNAPSHOT_VERSION = "../../resources/fixtures/api/default_snapshot_version.json"
+const DEFAULT_SNAPSHOT_VERSION_INVALID = "../../resources/fixtures/api/error_invalid_domain.json"
 
 func TestFetchSnapshotVersion(t *testing.T) {
 	t.Run("Should return snapshot version", func(t *testing.T) {
-		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot_version.json")
+		responsePayload := utils.ReadJsonFromFile(DEFAULT_SNAPSHOT_VERSION)
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
@@ -37,7 +41,7 @@ func TestFetchSnapshotVersion(t *testing.T) {
 	})
 
 	t.Run("Should return error - invalid domain", func(t *testing.T) {
-		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/error_invalid_domain.json")
+		responsePayload := utils.ReadJsonFromFile(DEFAULT_SNAPSHOT_VERSION_INVALID)
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, responsePayload)
 		defer fakeApiServer.Close()
 
@@ -57,7 +61,7 @@ func TestFetchSnapshotVersion(t *testing.T) {
 
 func TestFetchSnapshot(t *testing.T) {
 	t.Run("Should return snapshot", func(t *testing.T) {
-		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot.json")
+		responsePayload := utils.ReadJsonFromFile(DEFAULT_SNAPSHOT)
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
@@ -68,10 +72,11 @@ func TestFetchSnapshot(t *testing.T) {
 		assert.Contains(t, snapshot, "version", "Missing version in snapshot")
 		assert.Contains(t, snapshot, "group", "Missing groups in snapshot")
 		assert.Contains(t, snapshot, "config", "Missing config in snapshot")
+		assert.Contains(t, snapshot, "relay", "Missing relay in snapshot")
 	})
 
 	t.Run("Should return data from snapshot", func(t *testing.T) {
-		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/default_snapshot.json")
+		responsePayload := utils.ReadJsonFromFile(DEFAULT_SNAPSHOT)
 		fakeApiServer := givenApiResponse(http.StatusOK, responsePayload)
 		defer fakeApiServer.Close()
 
@@ -82,6 +87,9 @@ func TestFetchSnapshot(t *testing.T) {
 		assert.NotNil(t, data.Snapshot.Domain, "domain", "Missing domain in data")
 		assert.NotNil(t, data.Snapshot.Domain.Group, "group", "Missing groups in data")
 		assert.NotNil(t, data.Snapshot.Domain.Group[0].Config, "config", "Missing config in data")
+		assert.NotNil(t, data.Snapshot.Domain.Group[0].Config[0].Strategies, "strategies", "Missing strategies in data")
+		assert.NotNil(t, data.Snapshot.Domain.Group[0].Config[0].Relay, "relay", "Missing relay in data")
+		assert.Contains(t, data.Snapshot.Domain.Group[0].Config[0].Relay.Type, "NOTIFICATION", "Missing relay type in data")
 	})
 
 	t.Run("Should return error - invalid API key", func(t *testing.T) {
@@ -95,7 +103,7 @@ func TestFetchSnapshot(t *testing.T) {
 	})
 
 	t.Run("Should return error - invalid domain", func(t *testing.T) {
-		responsePayload := utils.ReadJsonFromFile("../../resources/fixtures/api/error_invalid_domain.json")
+		responsePayload := utils.ReadJsonFromFile(DEFAULT_SNAPSHOT_INVALID)
 		fakeApiServer := givenApiResponse(http.StatusUnauthorized, responsePayload)
 		defer fakeApiServer.Close()
 

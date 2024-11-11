@@ -23,6 +23,13 @@
                                     ]
                                 }
                             ],
+                            "relay": {
+                                "type": "NOTIFICATION",
+                                "method": "POST",
+                                "endpoint": "http://localhost:8080/notify",
+                                "description": "",
+                                "activated": true
+                            },
                             "components": [
                                 "app1"
                             ]
