@@ -1,8 +1,6 @@
 module github.com/switcherapi/switcher-gitops
 
-go 1.23
-
-toolchain go1.23.0
+go 1.23.4
 
 require (
 	github.com/go-git/go-billy/v5 v5.6.0
@@ -39,7 +37,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/net v0.32.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
@@ -47,4 +45,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/elazarl/goproxy => github.com/elazarl/goproxy v0.0.0-20241218172127-ac55c7698e0d
+replace github.com/elazarl/goproxy => github.com/elazarl/goproxy v0.0.0-20241224112848-b717bebf1f4e
