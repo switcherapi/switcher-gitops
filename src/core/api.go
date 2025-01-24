@@ -147,7 +147,7 @@ func (a *ApiService) doRequest(req *http.Request) (*http.Response, error) {
 		caCert, err := os.ReadFile(a.caCertPath)
 
 		if err != nil {
-			utils.LogError("Error reading CA certificate file: " + err.Error())
+			utils.LogError("%s", "Error reading CA certificate file: "+err.Error())
 			return nil, err
 		}
 

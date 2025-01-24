@@ -177,7 +177,7 @@ func TestPushChanges(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, err)
-		assert.Equal(t, "authorization failed", err.Error())
+		assert.Equal(t, "authorization failed: Write access to repository not granted.", err.Error())
 		assert.Empty(t, commitHash)
 	})
 }
