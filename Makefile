@@ -16,6 +16,9 @@ ifeq ($(OS),Windows_NT)
 else
 	GO_ENV=prod go run ./src/cmd/app/main.go
 endif
+
+test-clean:
+	go clean -testcache
 	
 test:
 	go test -p 1 -v ./...
