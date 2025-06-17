@@ -69,27 +69,27 @@ func StrategyNames(strategies []Strategy) []string {
 }
 
 func GetStrategyByName(strategies []Strategy, name string) Strategy {
-	for _, s := range strategies {
-		if s.Strategy == name {
-			return s
+	for i := range strategies {
+		if strategies[i].Strategy == name {
+			return strategies[i]
 		}
 	}
 	return Strategy{}
 }
 
 func GetConfigByKey(configs []Config, key string) Config {
-	for _, c := range configs {
-		if c.Key == key {
-			return c
+	for i := range configs {
+		if configs[i].Key == key {
+			return configs[i]
 		}
 	}
 	return Config{}
 }
 
 func GetGroupByName(groups []Group, name string) Group {
-	for _, g := range groups {
-		if g.Name == name {
-			return g
+	for i := range groups {
+		if groups[i].Name == name {
+			return groups[i]
 		}
 	}
 	return Group{}

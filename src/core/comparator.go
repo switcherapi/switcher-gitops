@@ -70,9 +70,10 @@ func (c *ComparatorService) RemoveDeleted(diffResult model.DiffResult) model.Dif
 func checkGroupDiff(left model.Snapshot, right model.Snapshot, diffType DiffType, diffResult model.DiffResult) model.DiffResult {
 	for _, leftGroup := range left.Domain.Group {
 		if !slices.Contains(model.GroupNames(right.Domain.Group), leftGroup.Name) {
-			if diffType == NEW {
+			switch diffType {
+			case NEW:
 				appendDiffResults(string(diffType), string(GROUP), []string{}, leftGroup, &diffResult)
-			} else if diffType == DELETED {
+			case DELETED:
 				appendDiffResults(string(diffType), string(GROUP), []string{leftGroup.Name}, nil, &diffResult)
 			}
 		} else {
@@ -103,9 +104,10 @@ func checkConfigDiff(leftGroup model.Group, rightGroup model.Group, diffResult *
 
 	for _, leftConfig := range leftGroup.Config {
 		if !slices.Contains(model.ConfigKeys(rightGroup.Config), leftConfig.Key) {
-			if diffType == NEW {
+			switch diffType {
+			case NEW:
 				appendDiffResults(string(diffType), string(CONFIG), []string{leftGroup.Name}, leftConfig, diffResult)
-			} else if diffType == DELETED {
+			case DELETED:
 				appendDiffResults(string(diffType), string(CONFIG), []string{leftGroup.Name, leftConfig.Key}, nil, diffResult)
 			}
 		} else {
@@ -139,10 +141,11 @@ func checkStrategyDiff(leftConfig model.Config, rightConfig model.Config, leftGr
 
 	for _, leftStrategy := range leftConfig.Strategies {
 		if !slices.Contains(model.StrategyNames(rightConfig.Strategies), leftStrategy.Strategy) {
-			if diffType == NEW {
+			switch diffType {
+			case NEW:
 				appendDiffResults(string(diffType), string(STRATEGY),
 					[]string{leftGroup.Name, leftConfig.Key}, leftStrategy, diffResult)
-			} else if diffType == DELETED {
+			case DELETED:
 				appendDiffResults(string(diffType), string(STRATEGY),
 					[]string{leftGroup.Name, leftConfig.Key, leftStrategy.Strategy}, nil, diffResult)
 			}

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/model"
-	"github.com/switcherapi/switcher-gitops/src/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -160,10 +159,7 @@ func registerAccountRepositoryValidators(db *mongo.Database) {
 		Options: indexOptions,
 	}
 
-	_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
-	if err != nil {
-		utils.LogError("Error creating index for account (environment, domain.id): %s", err.Error())
-	}
+	collection.Indexes().CreateOne(context.Background(), indexModel)
 }
 
 func getUpdateFields(account *model.Account) bson.M {
