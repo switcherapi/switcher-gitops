@@ -2,25 +2,24 @@ name: Master CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
-    if: "! contains(toJSON(github.event.commits.*.message), '[skip ci]')"
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Set up Go 1.24.4
+    - name: Set up Go 1.24.5
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4'
+        go-version: '1.24.5'
 
     - name: Start MongoDB
       uses: supercharge/mongodb-github-action@1.12.0
@@ -46,8 +45,8 @@ jobs:
     - name: SonarCloud Scan
       uses: sonarsource/sonarqube-scan-action@v5.2.0
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      if: env.SONAR_TOKEN != ''
 
   docker:
     name: Publish Docker Image
