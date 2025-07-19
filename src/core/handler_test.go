@@ -500,6 +500,35 @@ func TestAccountHandlerNotSync(t *testing.T) {
 		tearDown()
 	})
 
+	t.Run("Should not sync when comparatorService panics", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		fakeComparatorService := NewFakeComparatorService()
+		fakeComparatorService.throwPanicCheckDiff = true
+
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, fakeApiService, fakeComparatorService)
+		account := givenAccount()
+		account.Domain.ID = "123-comparator-panic"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		// Wait for goroutine to process
+		time.Sleep(1 * time.Second)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.Equal(t, model.StatusError, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, "Panic occurred in CheckSnapshotDiff")
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+		assert.Equal(t, 0, accountFromDb.Domain.Version)
+
+		tearDown()
+	})
+
 	t.Run("Should not sync when git token has no permission to push changes", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -737,4 +766,33 @@ func (f *FakeApiService) NewDataFromJson(jsonData []byte) model.Data {
 	var data model.Data
 	json.Unmarshal(jsonData, &data)
 	return data
+}
+
+type FakeComparatorService struct {
+	throwPanicCheckDiff bool
+}
+
+func NewFakeComparatorService() *FakeComparatorService {
+	return &FakeComparatorService{}
+}
+
+func (f *FakeComparatorService) CheckSnapshotDiff(left model.Snapshot, right model.Snapshot, diffType DiffType) model.DiffResult {
+	if f.throwPanicCheckDiff {
+		panic("Panic occurred in CheckSnapshotDiff")
+	}
+	return model.DiffResult{}
+}
+
+func (f *FakeComparatorService) MergeResults(diffResults []model.DiffResult) model.DiffResult {
+	return model.DiffResult{}
+}
+
+func (f *FakeComparatorService) NewSnapshotFromJson(jsonData []byte) model.Snapshot {
+	var snapshot model.Snapshot
+	json.Unmarshal(jsonData, &snapshot)
+	return snapshot
+}
+
+func (f *FakeComparatorService) RemoveDeleted(diffResult model.DiffResult) model.DiffResult {
+	return diffResult
 }

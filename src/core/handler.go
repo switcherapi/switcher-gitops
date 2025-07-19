@@ -164,7 +164,17 @@ func (c *CoreHandler) syncUp(account model.Account, repositoryData *model.Reposi
 	c.updateDomainStatus(account, model.StatusSynced, model.MessageSynced, utils.LogLevelInfo)
 }
 
-func (c *CoreHandler) checkForChanges(account model.Account, content string) (model.DiffResult, model.Snapshot, error) {
+func (c *CoreHandler) checkForChanges(account model.Account, content string) (diff model.DiffResult, snapshot model.Snapshot, err error) {
+	// Recover from any panic in comparatorService operations
+	// Manual changes to respository data may contain inconsistencies that can cause panic
+	defer func() {
+		if r := recover(); r != nil {
+			diff = model.DiffResult{}
+			snapshot = model.Snapshot{}
+			err = fmt.Errorf("%v", r)
+		}
+	}()
+
 	// Get Snapshot from API
 	snapshotJsonFromApi, err := c.apiService.FetchSnapshot(account.Domain.ID, account.Environment)
 
