@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/switcherapi/switcher-gitops/src/model"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type AccountRepository interface {
@@ -44,7 +43,7 @@ func (repo *AccountRepositoryMongo) Create(account *model.Account) (*model.Accou
 		return nil, err
 	}
 
-	account.ID = result.InsertedID.(primitive.ObjectID)
+	account.ID = result.InsertedID.(bson.ObjectID)
 	return account, nil
 }
 
@@ -52,7 +51,7 @@ func (repo *AccountRepositoryMongo) UpdateByDomainEnvironment(account *model.Acc
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
-	filter := primitive.M{domainIdFilter: account.Domain.ID, environmentFilter: account.Environment}
+	filter := bson.M{domainIdFilter: account.Domain.ID, environmentFilter: account.Environment}
 	update := getUpdateFields(account)
 
 	var updatedAccount model.Account
@@ -68,18 +67,18 @@ func (repo *AccountRepositoryMongo) UpdateByDomainEnvironment(account *model.Acc
 }
 
 func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.Account, error) {
-	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	objectId, _ := bson.ObjectIDFromHex(accountId)
 	filter := bson.M{"_id": objectId}
 	return repo.fetchOne(filter)
 }
 
 func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error) {
-	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
+	filter := bson.M{domainIdFilter: domainId, environmentFilter: environment}
 	return repo.fetchOne(filter)
 }
 
 func (repo *AccountRepositoryMongo) FetchAllByDomainId(domainId string) []model.Account {
-	filter := primitive.M{domainIdFilter: domainId}
+	filter := bson.M{domainIdFilter: domainId}
 	return repo.fetchMany(filter)
 }
 
@@ -89,17 +88,17 @@ func (repo *AccountRepositoryMongo) FetchAllAccounts() []model.Account {
 }
 
 func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
-	objectId, _ := primitive.ObjectIDFromHex(accountId)
+	objectId, _ := bson.ObjectIDFromHex(accountId)
 	filter := bson.M{"_id": objectId}
 	return repo.deleteOne(filter)
 }
 
 func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId string, environment string) error {
-	filter := primitive.M{domainIdFilter: domainId, environmentFilter: environment}
+	filter := bson.M{domainIdFilter: domainId, environmentFilter: environment}
 	return repo.deleteOne(filter)
 }
 
-func (repo *AccountRepositoryMongo) deleteOne(filter primitive.M) error {
+func (repo *AccountRepositoryMongo) deleteOne(filter bson.M) error {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
@@ -111,7 +110,7 @@ func (repo *AccountRepositoryMongo) deleteOne(filter primitive.M) error {
 	return err
 }
 
-func (repo *AccountRepositoryMongo) fetchMany(filter primitive.M) []model.Account {
+func (repo *AccountRepositoryMongo) fetchMany(filter bson.M) []model.Account {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 
@@ -129,7 +128,7 @@ func (repo *AccountRepositoryMongo) fetchMany(filter primitive.M) []model.Accoun
 	return accounts
 }
 
-func (repo *AccountRepositoryMongo) fetchOne(filter primitive.M) (*model.Account, error) {
+func (repo *AccountRepositoryMongo) fetchOne(filter bson.M) (*model.Account, error) {
 	collection, ctx, cancel := getDbContext(repo)
 	defer cancel()
 

@@ -1,6 +1,6 @@
 package model
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import "go.mongodb.org/mongo-driver/v2/bson"
 
 const (
 	CollectionName = "accounts"
@@ -19,14 +19,14 @@ const (
 )
 
 type Account struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	Repository  string             `json:"repository"`
-	Branch      string             `json:"branch"`
-	Path        string             `json:"path"`
-	Token       string             `json:"token"`
-	Environment string             `json:"environment"`
-	Domain      DomainDetails      `json:"domain"`
-	Settings    *Settings          `json:"settings"`
+	ID          bson.ObjectID `bson:"_id,omitempty"`
+	Repository  string        `json:"repository"`
+	Branch      string        `json:"branch"`
+	Path        string        `json:"path"`
+	Token       string        `json:"token"`
+	Environment string        `json:"environment"`
+	Domain      DomainDetails `json:"domain"`
+	Settings    *Settings     `json:"settings"`
 }
 
 type DomainDetails struct {

@@ -9,7 +9,7 @@ import (
 	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/model"
 	"github.com/switcherapi/switcher-gitops/src/repository"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 var mongoDb *mongo.Database
