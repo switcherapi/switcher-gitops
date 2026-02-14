@@ -14,12 +14,12 @@ import (
 type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
 	FetchByAccountId(accountId string) (*model.Account, error)
-	FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error)
+	FetchByDomainIdEnvironment(domainId, environment string) (*model.Account, error)
 	FetchAllByDomainId(domainId string) []model.Account
 	FetchAllAccounts() []model.Account
 	UpdateByDomainEnvironment(account *model.Account) (*model.Account, error)
 	DeleteByAccountId(accountId string) error
-	DeleteByDomainIdEnvironment(domainId string, environment string) error
+	DeleteByDomainIdEnvironment(domainId, environment string) error
 }
 
 type AccountRepositoryMongo struct {
@@ -72,7 +72,7 @@ func (repo *AccountRepositoryMongo) FetchByAccountId(accountId string) (*model.A
 	return repo.fetchOne(filter)
 }
 
-func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId string, environment string) (*model.Account, error) {
+func (repo *AccountRepositoryMongo) FetchByDomainIdEnvironment(domainId, environment string) (*model.Account, error) {
 	filter := bson.M{domainIdFilter: domainId, environmentFilter: environment}
 	return repo.fetchOne(filter)
 }
@@ -93,7 +93,7 @@ func (repo *AccountRepositoryMongo) DeleteByAccountId(accountId string) error {
 	return repo.deleteOne(filter)
 }
 
-func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId string, environment string) error {
+func (repo *AccountRepositoryMongo) DeleteByDomainIdEnvironment(domainId, environment string) error {
 	filter := bson.M{domainIdFilter: domainId, environmentFilter: environment}
 	return repo.deleteOne(filter)
 }

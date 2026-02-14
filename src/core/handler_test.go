@@ -672,11 +672,11 @@ func (f *FakeGitService) GetRepositoryData(environment string) (*model.Repositor
 	return &f.existingData, nil
 }
 
-func (f *FakeGitService) CreateRepositoryData(environment string, content string) (*model.RepositoryData, error) {
+func (f *FakeGitService) CreateRepositoryData(environment, content string) (*model.RepositoryData, error) {
 	return &f.newData, nil
 }
 
-func (f *FakeGitService) PushChanges(environment string, content string, message string) (*model.RepositoryData, error) {
+func (f *FakeGitService) PushChanges(environment, content, message string) (*model.RepositoryData, error) {
 	if f.errorPushChanges != "" {
 		return nil, errors.New(f.errorPushChanges)
 	}
@@ -684,7 +684,7 @@ func (f *FakeGitService) PushChanges(environment string, content string, message
 	return &f.existingData, nil
 }
 
-func (f *FakeGitService) UpdateRepositorySettings(repository string, token string, branch string, path string) {
+func (f *FakeGitService) UpdateRepositorySettings(repository, token, branch, path string) {
 	// Do nothing
 }
 
@@ -738,7 +738,7 @@ func NewFakeApiService() *FakeApiService {
 	}
 }
 
-func (f *FakeApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
+func (f *FakeApiService) FetchSnapshotVersion(domainId, environment string) (string, error) {
 	if f.throwErrorVersion {
 		return "", errors.New("something went wrong")
 	}
@@ -746,7 +746,7 @@ func (f *FakeApiService) FetchSnapshotVersion(domainId string, environment strin
 	return f.responseVersion, nil
 }
 
-func (f *FakeApiService) FetchSnapshot(domainId string, environment string) (string, error) {
+func (f *FakeApiService) FetchSnapshot(domainId, environment string) (string, error) {
 	if f.throwErrorSnapshot {
 		return "", errors.New("something went wrong")
 	}

@@ -52,7 +52,7 @@ func ToMapFromObject(obj interface{}) map[string]interface{} {
 	return result
 }
 
-func Encrypt(plaintext string, privateKey string) string {
+func Encrypt(plaintext, privateKey string) string {
 	aes, _ := aes.NewCipher([]byte(privateKey))
 	gcm, _ := cipher.NewGCM(aes)
 
@@ -62,7 +62,7 @@ func Encrypt(plaintext string, privateKey string) string {
 	return base64.StdEncoding.EncodeToString(ciphertext)
 }
 
-func Decrypt(encodedPlaintext string, privateKey string) (string, error) {
+func Decrypt(encodedPlaintext, privateKey string) (string, error) {
 	decodedText, _ := base64.StdEncoding.DecodeString(encodedPlaintext)
 
 	aes, _ := aes.NewCipher([]byte(privateKey))

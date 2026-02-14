@@ -17,8 +17,8 @@ import (
 
 type IGitService interface {
 	GetRepositoryData(environment string) (*model.RepositoryData, error)
-	PushChanges(environment string, content string, message string) (*model.RepositoryData, error)
-	UpdateRepositorySettings(repository string, encryptedToken string, branch string, path string)
+	PushChanges(environment, content, message string) (*model.RepositoryData, error)
+	UpdateRepositorySettings(repository, encryptedToken, branch, path string)
 }
 
 type GitService struct {
@@ -28,7 +28,7 @@ type GitService struct {
 	path           string
 }
 
-func NewGitService(repoURL string, encryptedToken string, branchName string, path string) *GitService {
+func NewGitService(repoURL, encryptedToken, branchName, path string) *GitService {
 	return &GitService{
 		repoURL:        repoURL,
 		encryptedToken: encryptedToken,
@@ -37,7 +37,7 @@ func NewGitService(repoURL string, encryptedToken string, branchName string, pat
 	}
 }
 
-func (g *GitService) UpdateRepositorySettings(repository string, encryptedToken string, branch string, path string) {
+func (g *GitService) UpdateRepositorySettings(repository, encryptedToken, branch, path string) {
 	g.repoURL = repository
 	g.encryptedToken = encryptedToken
 	g.branchName = branch
@@ -58,7 +58,7 @@ func (g *GitService) GetRepositoryData(environment string) (*model.RepositoryDat
 	}, nil
 }
 
-func (g *GitService) PushChanges(environment string, content string, message string) (*model.RepositoryData, error) {
+func (g *GitService) PushChanges(environment, content, message string) (*model.RepositoryData, error) {
 	// Create an in-memory file system
 	fs := memfs.New()
 

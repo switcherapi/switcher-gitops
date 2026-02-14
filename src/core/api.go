@@ -29,8 +29,8 @@ type PushChangeResponse struct {
 }
 
 type IAPIService interface {
-	FetchSnapshotVersion(domainId string, environment string) (string, error)
-	FetchSnapshot(domainId string, environment string) (string, error)
+	FetchSnapshotVersion(domainId, environment string) (string, error)
+	FetchSnapshot(domainId, environment string) (string, error)
 	PushChanges(domainId string, diff model.DiffResult) (PushChangeResponse, error)
 	NewDataFromJson(jsonData []byte) model.Data
 }
@@ -41,7 +41,7 @@ type ApiService struct {
 	caCertPath string
 }
 
-func NewApiService(apiKey string, apiUrl string, caCertPath string) *ApiService {
+func NewApiService(apiKey, apiUrl, caCertPath string) *ApiService {
 	return &ApiService{
 		apiKey:     apiKey,
 		apiUrl:     apiUrl,
@@ -55,7 +55,7 @@ func (c *ApiService) NewDataFromJson(jsonData []byte) model.Data {
 	return data
 }
 
-func (a *ApiService) FetchSnapshotVersion(domainId string, environment string) (string, error) {
+func (a *ApiService) FetchSnapshotVersion(domainId, environment string) (string, error) {
 	query := createQuerySnapshotVersion(domainId)
 	responseBody, err := a.doGraphQLRequest(domainId, query)
 
@@ -66,7 +66,7 @@ func (a *ApiService) FetchSnapshotVersion(domainId string, environment string) (
 	return responseBody, nil
 }
 
-func (a *ApiService) FetchSnapshot(domainId string, environment string) (string, error) {
+func (a *ApiService) FetchSnapshot(domainId, environment string) (string, error) {
 	query := createQuery(domainId, environment)
 	responseBody, err := a.doGraphQLRequest(domainId, query)
 
@@ -96,7 +96,7 @@ func (a *ApiService) PushChanges(domainId string, diff model.DiffResult) (PushCh
 	return response, nil
 }
 
-func (a *ApiService) doGraphQLRequest(domainId string, query string) (string, error) {
+func (a *ApiService) doGraphQLRequest(domainId, query string) (string, error) {
 	// Generate a bearer token
 	resource := config.GetEnv("SWITCHER_PATH_GRAPHQL")
 	token := generateBearerToken(a.apiKey, domainId, resource)
@@ -169,7 +169,7 @@ func (a *ApiService) doRequest(req *http.Request) (*http.Response, error) {
 	return client.Do(req)
 }
 
-func generateBearerToken(apiKey string, subject string, resource string) string {
+func generateBearerToken(apiKey, subject, resource string) string {
 	// Define the claims for the JWT token
 	claims := jwt.MapClaims{
 		"iss":     "Switcher GitOps",
@@ -201,7 +201,7 @@ func createQuerySnapshotVersion(domainId string) string {
     }`, domainId)
 }
 
-func createQuery(domainId string, environment string) string {
+func createQuery(domainId, environment string) string {
 	return fmt.Sprintf(`
     {
         domain(_id: "%s", environment: "%s") {
