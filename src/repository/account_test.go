@@ -2,10 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/switcherapi/switcher-gitops/src/db"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -78,6 +81,7 @@ func TestFetchAccount(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, err)
+		assert.True(t, errors.Is(err, ErrAccountNotFound))
 	})
 
 	t.Run("Should fetch an account by domain ID and environment", func(t *testing.T) {
@@ -100,6 +104,7 @@ func TestFetchAccount(t *testing.T) {
 
 		// Assert
 		assert.NotNil(t, err)
+		assert.True(t, errors.Is(err, ErrAccountNotFound))
 	})
 
 	t.Run("Should fetch all accounts", func(t *testing.T) {
@@ -243,5 +248,40 @@ func TestDeleteAccount(t *testing.T) {
 		// Assert
 		assert.NotNil(t, err)
 		assert.Equal(t, "account not found", err.Error())
+	})
+
+	t.Run("Should return delete error when database operation fails", func(t *testing.T) {
+		// Given
+		disconnectedDb := db.InitDb()
+		disconnectedDb.Client().Disconnect(context.Background())
+		disconnectedRepository := NewAccountRepositoryMongo(disconnectedDb)
+
+		// Test
+		err := disconnectedRepository.DeleteByDomainIdEnvironment("123-delete-error", "default")
+
+		// Assert
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "client is disconnected")
+	})
+}
+
+func TestNormalizeAccountError(t *testing.T) {
+	t.Run("Should map mongo no documents error to account not found", func(t *testing.T) {
+		// Test
+		err := normalizeAccountError(mongo.ErrNoDocuments)
+
+		// Assert
+		assert.True(t, errors.Is(err, ErrAccountNotFound))
+	})
+
+	t.Run("Should return original error when it is not a not found error", func(t *testing.T) {
+		// Given
+		expectedErr := errors.New("temporary database outage")
+
+		// Test
+		err := normalizeAccountError(expectedErr)
+
+		// Assert
+		assert.Same(t, expectedErr, err)
 	})
 }

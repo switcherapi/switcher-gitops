@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+var ErrAccountNotFound = errors.New("account not found")
+
 type AccountRepository interface {
 	Create(account *model.Account) (*model.Account, error)
 	FetchByAccountId(accountId string) (*model.Account, error)
@@ -60,7 +62,7 @@ func (repo *AccountRepositoryMongo) UpdateByDomainEnvironment(account *model.Acc
 		Decode(&updatedAccount)
 
 	if err != nil {
-		return nil, err
+		return nil, normalizeAccountError(err)
 	}
 
 	return &updatedAccount, nil
@@ -103,11 +105,15 @@ func (repo *AccountRepositoryMongo) deleteOne(filter bson.M) error {
 	defer cancel()
 
 	result, err := collection.DeleteOne(ctx, filter)
-	if result.DeletedCount == 0 {
-		return errors.New("account not found")
+	if err != nil {
+		return err
 	}
 
-	return err
+	if result.DeletedCount == 0 {
+		return ErrAccountNotFound
+	}
+
+	return nil
 }
 
 func (repo *AccountRepositoryMongo) fetchMany(filter bson.M) []model.Account {
@@ -135,10 +141,18 @@ func (repo *AccountRepositoryMongo) fetchOne(filter bson.M) (*model.Account, err
 	var account model.Account
 	err := collection.FindOne(ctx, filter).Decode(&account)
 	if err != nil {
-		return nil, err
+		return nil, normalizeAccountError(err)
 	}
 
 	return &account, nil
+}
+
+func normalizeAccountError(err error) error {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return ErrAccountNotFound
+	}
+
+	return err
 }
 
 func getDbContext(repo *AccountRepositoryMongo) (*mongo.Collection, context.Context, context.CancelFunc) {

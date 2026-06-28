@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -69,49 +70,32 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 	utils.LogInfo("[%s] Starting account handler", accountId)
 
 	for {
-		// Refresh account settings
-		account, _ := c.accountRepository.FetchByAccountId(accountId)
-
-		if account == nil {
-			// Terminate the goroutine (account was deleted)
-			utils.LogInfo("[%s] Account was deleted, terminating account handler", accountId)
+		account, shouldStop := c.fetchActiveAccount(accountId)
+		if shouldStop {
 			return
+		}
+		if account == nil {
+			continue
 		}
 
 		// Wait for account to be active
 		if !account.Settings.Active {
 			c.updateDomainStatus(*account, model.StatusPending, "Account was deactivated",
 				utils.LogLevelInfo)
-			time.Sleep(time.Duration(c.waitingTime))
+			c.waitForNextAttempt()
 			continue
 		}
 
 		// Refresh account repository settings
 		gitService.UpdateRepositorySettings(account.Repository, account.Token, account.Branch, account.Path)
 
-		// Fetch repository data
-		repositoryData, err := c.getRepositoryData(gitService, account)
-
-		if err != nil {
-			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error(),
-				utils.LogLevelError)
-			time.Sleep(time.Duration(c.waitingTime))
+		repositoryData, shouldContinue := c.fetchRepositoryData(account, gitService)
+		if shouldContinue {
 			continue
 		}
 
-		if !utils.IsJsonValid(repositoryData.Content, &model.Snapshot{}) {
-			c.updateDomainStatus(*account, model.StatusError, "Invalid JSON content", utils.LogLevelError)
-			time.Sleep(time.Duration(c.waitingTime))
-			continue
-		}
-
-		// Fetch snapshot version from API
-		snapshotVersionPayload, err := c.apiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
-
-		if err != nil {
-			c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error(),
-				utils.LogLevelError)
-			time.Sleep(time.Duration(c.waitingTime))
+		snapshotVersionPayload, shouldContinue := c.fetchSnapshotVersion(account)
+		if shouldContinue {
 			continue
 		}
 
@@ -120,10 +104,68 @@ func (c *CoreHandler) StartAccountHandler(accountId string, gitService IGitServi
 			c.syncUp(*account, repositoryData, gitService)
 		}
 
-		// Wait for the next cycle
-		timeWindow, unitWindow := utils.GetTimeWindow(account.Settings.Window)
-		time.Sleep(time.Duration(timeWindow) * unitWindow)
+		c.waitForAccountWindow(account)
 	}
+}
+
+func (c *CoreHandler) fetchActiveAccount(accountId string) (*model.Account, bool) {
+	account, err := c.accountRepository.FetchByAccountId(accountId)
+	if err == nil && account != nil {
+		return account, false
+	}
+
+	if errors.Is(err, repository.ErrAccountNotFound) {
+		utils.LogInfo("[%s] Account was deleted, terminating account handler", accountId)
+		return nil, true
+	}
+
+	if err != nil {
+		utils.LogError("[%s] Failed to refresh account settings - %s", accountId, err.Error())
+	} else {
+		utils.LogError("[%s] Failed to refresh account settings - empty account payload", accountId)
+	}
+
+	c.waitForNextAttempt()
+	return nil, false
+}
+
+func (c *CoreHandler) fetchRepositoryData(account *model.Account, gitService IGitService) (*model.RepositoryData, bool) {
+	repositoryData, err := c.getRepositoryData(gitService, account)
+	if err != nil {
+		c.updateDomainStatus(*account, model.StatusError, "Failed to fetch repository data - "+err.Error(),
+			utils.LogLevelError)
+		c.waitForNextAttempt()
+		return nil, true
+	}
+
+	if !utils.IsJsonValid(repositoryData.Content, &model.Snapshot{}) {
+		c.updateDomainStatus(*account, model.StatusError, "Invalid JSON content", utils.LogLevelError)
+		c.waitForNextAttempt()
+		return nil, true
+	}
+
+	return repositoryData, false
+}
+
+func (c *CoreHandler) fetchSnapshotVersion(account *model.Account) (string, bool) {
+	snapshotVersionPayload, err := c.apiService.FetchSnapshotVersion(account.Domain.ID, account.Environment)
+	if err != nil {
+		c.updateDomainStatus(*account, model.StatusError, "Failed to fetch snapshot version - "+err.Error(),
+			utils.LogLevelError)
+		c.waitForNextAttempt()
+		return "", true
+	}
+
+	return snapshotVersionPayload, false
+}
+
+func (c *CoreHandler) waitForNextAttempt() {
+	time.Sleep(c.waitingTime)
+}
+
+func (c *CoreHandler) waitForAccountWindow(account *model.Account) {
+	timeWindow, unitWindow := utils.GetTimeWindow(account.Settings.Window)
+	time.Sleep(time.Duration(timeWindow) * unitWindow)
 }
 
 func (c *CoreHandler) getRepositoryData(gitService IGitService, account *model.Account) (*model.RepositoryData, error) {

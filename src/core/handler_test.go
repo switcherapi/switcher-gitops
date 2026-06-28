@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/switcherapi/switcher-gitops/src/model"
+	"github.com/switcherapi/switcher-gitops/src/repository"
 )
 
 func TestInitCoreHandlerGoroutine(t *testing.T) {
@@ -346,6 +347,37 @@ func TestAccountHandlerSyncAPI(t *testing.T) {
 }
 
 func TestAccountHandlerNotSync(t *testing.T) {
+	t.Run("Should retry when account fetch returns an empty account payload", func(t *testing.T) {
+		// Given
+		flakyRepository := &EmptyFetchAccountRepository{
+			AccountRepository:   repository.NewAccountRepositoryMongo(mongoDb),
+			emptyFetchByIDCount: 1,
+		}
+		fakeApiService := NewFakeApiService()
+
+		coreHandler = NewCoreHandler(flakyRepository, fakeApiService, NewComparatorService())
+		coreHandler.waitingTime = 10 * time.Millisecond
+
+		account := givenAccount()
+		account.Domain.ID = "123-empty-payload"
+		accountCreated, _ := flakyRepository.Create(&account)
+
+		// Test
+		accountFromFetch, shouldStop := coreHandler.fetchActiveAccount(accountCreated.ID.Hex())
+
+		// Assert
+		assert.Nil(t, accountFromFetch)
+		assert.False(t, shouldStop)
+		assert.Equal(t, 1, flakyRepository.fetchByIDCalls)
+
+		accountFromFetch, shouldStop = coreHandler.fetchActiveAccount(accountCreated.ID.Hex())
+		assert.NotNil(t, accountFromFetch)
+		assert.False(t, shouldStop)
+		assert.Equal(t, 2, flakyRepository.fetchByIDCalls)
+
+		tearDown()
+	})
+
 	t.Run("Should not sync when account is not active", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -447,6 +479,38 @@ func TestAccountHandlerNotSync(t *testing.T) {
 		tearDown()
 	})
 
+	t.Run("Should retry when fetch snapshot version returns a transient error", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		flakyApiService := &RetrySnapshotVersionApiService{
+			FakeApiService:                NewFakeApiService(),
+			failFetchSnapshotVersionCount: 1,
+		}
+
+		coreHandler = NewCoreHandler(coreHandler.accountRepository, flakyApiService, NewComparatorService())
+		coreHandler.waitingTime = 10 * time.Millisecond
+
+		account := givenAccount()
+		account.Domain.ID = "123-retry-fetch-snapshot-version"
+		accountCreated, _ := coreHandler.accountRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		time.Sleep(200 * time.Millisecond)
+
+		// Assert
+		accountFromDb, _ := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.GreaterOrEqual(t, flakyApiService.fetchSnapshotVersionCalls, 2)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
+
+		tearDown()
+	})
+
 	t.Run("Should not sync after account is deleted", func(t *testing.T) {
 		// Given
 		fakeGitService := NewFakeGitService()
@@ -468,6 +532,39 @@ func TestAccountHandlerNotSync(t *testing.T) {
 		_, err := coreHandler.accountRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
 		assert.LessOrEqual(t, numGoroutinesAfter, numGoroutinesBefore)
 		assert.NotNil(t, err)
+
+		tearDown()
+	})
+
+	t.Run("Should retry when account fetch returns a transient error", func(t *testing.T) {
+		// Given
+		fakeGitService := NewFakeGitService()
+		fakeApiService := NewFakeApiService()
+		flakyRepository := &RetryFetchAccountRepository{
+			AccountRepository:  repository.NewAccountRepositoryMongo(mongoDb),
+			failFetchByIDCount: 1,
+		}
+
+		coreHandler = NewCoreHandler(flakyRepository, fakeApiService, NewComparatorService())
+		coreHandler.waitingTime = 10 * time.Millisecond
+
+		account := givenAccount()
+		account.Domain.ID = "123-fetch-retry"
+		accountCreated, _ := flakyRepository.Create(&account)
+
+		// Test
+		go coreHandler.StartAccountHandler(accountCreated.ID.Hex(), fakeGitService)
+
+		time.Sleep(200 * time.Millisecond)
+
+		// Assert
+		accountFromDb, _ := flakyRepository.FetchByDomainIdEnvironment(accountCreated.Domain.ID, accountCreated.Environment)
+		assert.GreaterOrEqual(t, flakyRepository.fetchByIDCalls, 2)
+		assert.Equal(t, model.StatusSynced, accountFromDb.Domain.Status)
+		assert.Contains(t, accountFromDb.Domain.Message, model.MessageSynced)
+		assert.Equal(t, "123", accountFromDb.Domain.LastCommit)
+		assert.Equal(t, 1, accountFromDb.Domain.Version)
+		assert.NotEqual(t, "", accountFromDb.Domain.LastDate)
 
 		tearDown()
 	})
@@ -627,6 +724,51 @@ func tearDown() {
 }
 
 // Fakes
+
+type RetryFetchAccountRepository struct {
+	repository.AccountRepository
+	failFetchByIDCount int
+	fetchByIDCalls     int
+}
+
+func (r *RetryFetchAccountRepository) FetchByAccountId(accountId string) (*model.Account, error) {
+	r.fetchByIDCalls++
+	if r.fetchByIDCalls <= r.failFetchByIDCount {
+		return nil, errors.New("temporary db outage")
+	}
+
+	return r.AccountRepository.FetchByAccountId(accountId)
+}
+
+type EmptyFetchAccountRepository struct {
+	repository.AccountRepository
+	emptyFetchByIDCount int
+	fetchByIDCalls      int
+}
+
+func (r *EmptyFetchAccountRepository) FetchByAccountId(accountId string) (*model.Account, error) {
+	r.fetchByIDCalls++
+	if r.fetchByIDCalls <= r.emptyFetchByIDCount {
+		return nil, nil
+	}
+
+	return r.AccountRepository.FetchByAccountId(accountId)
+}
+
+type RetrySnapshotVersionApiService struct {
+	*FakeApiService
+	failFetchSnapshotVersionCount int
+	fetchSnapshotVersionCalls     int
+}
+
+func (f *RetrySnapshotVersionApiService) FetchSnapshotVersion(domainId, environment string) (string, error) {
+	f.fetchSnapshotVersionCalls++
+	if f.fetchSnapshotVersionCalls <= f.failFetchSnapshotVersionCount {
+		return "", errors.New("temporary snapshot version outage")
+	}
+
+	return f.FakeApiService.FetchSnapshotVersion(domainId, environment)
+}
 
 type FakeGitService struct {
 	existingData     model.RepositoryData
