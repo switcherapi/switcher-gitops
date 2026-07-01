@@ -39,6 +39,12 @@ jobs:
         GIT_TOKEN_READ_ONLY: ${{ secrets.GIT_TOKEN_READ_ONLY }}
         GIT_REPO_URL: ${{ secrets.GIT_REPO_URL }}
         GIT_BRANCH: ${{ secrets.GIT_BRANCH }}
+
+    - name: Vulnerability Check
+      uses: golang/govulncheck-action@v1
+      with:
+        go-version-input: '1.26.4'
+        go-package: ./...
   
   docker:
     name: Publish Docker Image

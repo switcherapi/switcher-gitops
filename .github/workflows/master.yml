@@ -48,6 +48,12 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       if: env.SONAR_TOKEN != ''
 
+    - name: Vulnerability Check
+      uses: golang/govulncheck-action@v1
+      with:
+        go-version-input: '1.26.4'
+        go-package: ./...
+
   docker:
     name: Publish Docker Image
     needs: [ build-test ]
