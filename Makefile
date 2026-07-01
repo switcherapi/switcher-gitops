@@ -1,5 +1,7 @@
 .PHONY: build run test cover
 
+GOVULNCHECK_VERSION=v1.5.0
+
 build:
 	go build -o ./bin/app ./src/cmd/app/main.go
 
@@ -28,3 +30,9 @@ cover:
 
 cover-html:
 	go tool cover -html="coverage.out"
+
+vulncheck-install:
+	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+
+vulncheck:
+	govulncheck ./...
