@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
 
-    - name: Set up Go 1.26.4
+    - name: Set up Go 1.26.5
       uses: actions/setup-go@v6
       with:
-        go-version: '1.26.4'
+        go-version: '1.26.5'
 
     - name: Start MongoDB
       uses: supercharge/mongodb-github-action@1.12.1
@@ -48,9 +48,9 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       if: env.SONAR_TOKEN != ''
 
-    - name: Vulnerability Check
+    - name: Vulnerability Check v1.6.0
       run: |
-        go install golang.org/x/vuln/cmd/govulncheck@3e6f44f962742443c11ae2261f02e0c917aeb2bc
+        go install golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f
         govulncheck ./...
 
   docker:
@@ -90,12 +90,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: 'master'
 
       - name: Checkout Kustomize
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.ARGOCD_PAT }}
           repository: switcherapi/switcher-deployment
