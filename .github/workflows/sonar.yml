@@ -28,15 +28,15 @@ jobs:
             core.setOutput('base_ref', pr.data.base.ref);
             core.setOutput('head_sha', pr.data.head.sha);
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr.outputs.head_sha }}
           fetch-depth: 0
 
-      - name: Set up Go 1.26.4
+      - name: Set up Go 1.26.5
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26.4'
+          go-version: '1.26.5'
 
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.1
@@ -70,7 +70,7 @@ jobs:
             -Dsonar.pullrequest.branch=${{ steps.pr.outputs.head_ref }}
             -Dsonar.pullrequest.base=${{ steps.pr.outputs.base_ref }}
 
-      - name: Vulnerability Check
+      - name: Vulnerability Check v1.6.0
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@3e6f44f962742443c11ae2261f02e0c917aeb2bc
+          go install golang.org/x/vuln/cmd/govulncheck@19b0bb6a272792b9afa8a6983c3e9b9a1816947f
           govulncheck ./...
