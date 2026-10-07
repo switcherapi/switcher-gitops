@@ -18,8 +18,8 @@ func GetTimeWindow(window string) (int, time.Duration) {
 
 func FormatJSON(jsonString string) string {
 	var prettyJSON bytes.Buffer
-	error := json.Indent(&prettyJSON, []byte(jsonString), "", "  ")
-	if error != nil {
+	err := json.Indent(&prettyJSON, []byte(jsonString), "", "  ")
+	if err != nil {
 		return jsonString
 	}
 	return string(prettyJSON.String())
