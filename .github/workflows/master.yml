@@ -16,10 +16,10 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Go 1.27.1
+    - name: Set up Go 1.27.2
       uses: actions/setup-go@v7
       with:
-        go-version: '1.27.1'
+        go-version: '1.27.2'
 
     - name: Start MongoDB
       uses: supercharge/mongodb-github-action@1.12.1
@@ -48,9 +48,9 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       if: env.SONAR_TOKEN != ''
 
-    - name: Vulnerability Check v1.8.0
+    - name: Vulnerability Check v1.9.0
       run: |
-        go install golang.org/x/vuln/cmd/govulncheck@709015412431dd2b5b28a53c06c70bc02d49074c
+        go install golang.org/x/vuln/cmd/govulncheck@e672cbe8fbc8c76e28fcb6db0efd9ce354e0dac5
         govulncheck ./...
 
   docker:
