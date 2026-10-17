@@ -1,6 +1,6 @@
 .PHONY: build run test cover
 
-GOVULNCHECK_VERSION=v1.8.0
+GOVULNCHECK_VERSION=v1.9.0
 
 build:
 	go build -o ./bin/app ./src/cmd/app/main.go
